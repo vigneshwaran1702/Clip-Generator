@@ -3,751 +3,1372 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <meta name="description" content="Auto Shorts Generator — split long videos into shareable short clips instantly."/>
-  <title>Auto Shorts Generator</title>
+  <meta name="description" content="AI Video Generator — Create viral Shorts and Reels directly from comments, prompts, or video uploads."/>
+  <title>AI Clip Generator & Video Creator</title>
 
-  <!-- Preconnect for faster font load -->
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet"/>
 
   <style>
-    /* ── Reset & tokens ─────────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg:       #0b0f1a;
-      --surface:  #111827;
-      --card:     #1a2235;
-      --border:   #2a3650;
-      --accent:   #6366f1;
-      --accent2:  #8b5cf6;
-      --green:    #22c55e;
-      --red:      #ef4444;
-      --yellow:   #f59e0b;
-      --text:     #e2e8f0;
-      --muted:    #64748b;
-      --radius:   14px;
+      --bg: #070a12;
+      --surface: #0f172a;
+      --card: #141e33;
+      --card-hover: #1a2742;
+      --border: #22324e;
+      --border-glow: rgba(99, 102, 241, 0.35);
+      --accent: #6366f1;
+      --accent2: #8b5cf6;
+      --accent3: #ec4899;
+      --green: #10b981;
+      --yellow: #f59e0b;
+      --red: #ef4444;
+      --cyan: #06b6d4;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --radius: 16px;
+      --radius-sm: 10px;
     }
 
     body {
       font-family: 'Inter', sans-serif;
-      background: var(--bg);
+      background: radial-gradient(circle at 50% 0%, #151b36 0%, var(--bg) 60%);
       color: var(--text);
       min-height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
+      padding-bottom: 60px;
     }
 
-    /* ── Header ─────────────────────────────────────────────────── */
+    /* ── Header ────────────────────────────────────────────────────────── */
     header {
       width: 100%;
-      padding: 18px 40px;
-      background: rgba(17,24,39,0.9);
+      padding: 16px 36px;
+      background: rgba(15, 23, 42, 0.85);
       backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
       border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
-      gap: 14px;
+      gap: 16px;
       position: sticky;
       top: 0;
       z-index: 100;
     }
-    .logo {
-      width: 36px; height: 36px;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      border-radius: 10px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 17px;
-      flex-shrink: 0;
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: inherit;
     }
-    header h1 { font-size: 1.2rem; font-weight: 700; letter-spacing: -0.3px; }
-    .badge {
-      margin-left: auto;
-      font-size: 0.68rem;
-      padding: 3px 10px;
-      border-radius: 20px;
-      background: rgba(99,102,241,0.15);
-      border: 1px solid rgba(99,102,241,0.3);
-      color: #a5b4fc;
-      letter-spacing: 0.5px;
+
+    .brand-logo {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--accent), var(--accent3));
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      box-shadow: 0 4px 16px rgba(99, 102, 241, 0.4);
+    }
+
+    .brand-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.3rem;
+      font-weight: 700;
+      background: linear-gradient(120deg, #fff, #cbd5e1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .header-nav {
+      display: flex;
+      gap: 8px;
+      margin-left: 24px;
+      background: rgba(7, 10, 18, 0.6);
+      padding: 4px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+
+    .nav-tab {
+      padding: 8px 18px;
+      border-radius: 9px;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.88rem;
       font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
     }
 
-    /* ── API status indicator ────────────────────────────────────── */
+    .nav-tab:hover {
+      color: var(--text);
+    }
+
+    .nav-tab.active {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: white;
+      box-shadow: 0 2px 12px rgba(99, 102, 241, 0.35);
+    }
+
     .api-status {
-      display: flex; align-items: center; gap: 8px;
-      font-size: 0.78rem; color: var(--muted);
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.8rem;
+      color: var(--muted);
+      background: rgba(15, 23, 42, 0.6);
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
     }
+
     .api-dot {
-      width: 8px; height: 8px; border-radius: 50%;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
       background: var(--yellow);
-      transition: background 0.4s;
-      flex-shrink: 0;
-    }
-    .api-dot.online  { background: var(--green); animation: pulse 2s infinite; }
-    .api-dot.offline { background: var(--red); }
-    @keyframes pulse {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(34,197,94,0.45); }
-      50%       { box-shadow: 0 0 0 5px rgba(34,197,94,0); }
     }
 
-    /* ── Layout ─────────────────────────────────────────────────── */
+    .api-dot.online {
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+    }
+
+    .api-dot.offline {
+      background: var(--red);
+    }
+
+    /* ── Main Container ────────────────────────────────────────────────── */
     .container {
-      width: 100%; max-width: 820px;
-      padding: 36px 20px;
-      display: flex; flex-direction: column;
-      gap: 22px;
+      width: 100%;
+      max-width: 980px;
+      padding: 32px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
     }
 
-    /* ── Cards ──────────────────────────────────────────────────── */
+    .hero-banner {
+      text-align: center;
+      padding: 10px 0 10px;
+    }
+
+    .hero-banner h2 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 2.1rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, #ffffff, #a5b4fc);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-banner p {
+      color: var(--muted);
+      font-size: 0.98rem;
+      max-width: 620px;
+      margin: 0 auto;
+    }
+
+    /* ── Cards ─────────────────────────────────────────────────────────── */
     .card {
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 26px;
-      transition: border-color 0.2s;
-    }
-    .card:hover { border-color: rgba(99,102,241,0.35); }
-
-    .card-title {
-      font-size: 0.82rem; font-weight: 600;
-      text-transform: uppercase; letter-spacing: 1px;
-      color: var(--muted); margin-bottom: 16px;
-      display: flex; align-items: center; gap: 8px;
-    }
-    .step-num {
-      width: 22px; height: 22px;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      border-radius: 6px;
-      font-size: 0.7rem; font-weight: 700; color: white;
-      display: flex; align-items: center; justify-content: center;
-    }
-
-    /* ── Drop zone ──────────────────────────────────────────────── */
-    .drop-zone {
-      border: 2px dashed var(--border);
-      border-radius: 12px;
-      padding: 44px 20px;
-      text-align: center;
-      cursor: pointer;
-      transition: border-color 0.22s, background 0.22s;
+      padding: 28px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      transition: border-color 0.25s ease;
       position: relative;
     }
-    .drop-zone:hover,
-    .drop-zone.drag-over {
+
+    .card:hover {
+      border-color: var(--border-glow);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .card-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .step-badge {
+      width: 26px;
+      height: 26px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      font-weight: 800;
+      color: white;
+    }
+
+    /* ── AI Video Generator Form ───────────────────────────────────────── */
+    .prompt-box {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 16px;
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.98rem;
+      line-height: 1.5;
+      resize: vertical;
+      min-height: 110px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .prompt-box:focus {
       border-color: var(--accent);
-      background: rgba(99,102,241,0.05);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
     }
-    .drop-zone input[type="file"] {
-      position: absolute; inset: 0;
-      opacity: 0; cursor: pointer; width: 100%; height: 100%;
-    }
-    .drop-icon { font-size: 2.4rem; margin-bottom: 10px; }
-    .drop-zone p { color: var(--muted); font-size: 0.88rem; }
-    .drop-zone p span { color: var(--accent); font-weight: 500; }
-    #selected-file { margin-top: 10px; font-size: 0.83rem; color: var(--green); font-weight: 500; min-height: 1.2em; }
 
-    /* ── Form ───────────────────────────────────────────────────── */
-    .form-group { margin-bottom: 12px; }
+    .preset-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+      margin-bottom: 22px;
+    }
+
+    .preset-chip {
+      background: rgba(99, 102, 241, 0.1);
+      border: 1px solid rgba(99, 102, 241, 0.25);
+      color: #c7d2fe;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .preset-chip:hover {
+      background: rgba(99, 102, 241, 0.25);
+      border-color: var(--accent);
+      color: white;
+      transform: translateY(-1px);
+    }
+
+    .options-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
     .form-group label {
-      display: block; font-size: 0.78rem; font-weight: 500;
-      color: var(--muted); margin-bottom: 6px; letter-spacing: 0.3px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
-    .form-group input[type="number"] {
-      width: 100%; padding: 9px 14px;
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 8px; color: var(--text);
-      font-family: 'Inter', sans-serif; font-size: 0.88rem;
-      outline: none; transition: border-color 0.2s;
-    }
-    .form-group input[type="number"]:focus { border-color: var(--accent); }
 
-    /* ── Buttons ─────────────────────────────────────────────────── */
+    .select-input, .text-input {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 10px 14px;
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .select-input:focus, .text-input:focus {
+      border-color: var(--accent);
+    }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 4px;
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      inset: 0;
+      background-color: var(--border);
+      transition: .3s;
+      border-radius: 24px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .3s;
+      border-radius: 50%;
+    }
+
+    input:checked + .slider {
+      background-color: var(--accent);
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(20px);
+    }
+
+    /* ── Action Buttons ────────────────────────────────────────────────── */
     .btn {
-      display: inline-flex; align-items: center; gap: 7px;
-      padding: 10px 20px; border: none; border-radius: 9px;
-      font-family: 'Inter', sans-serif; font-size: 0.86rem;
-      font-weight: 600; cursor: pointer;
-      transition: transform 0.18s, box-shadow 0.18s, border-color 0.18s, color 0.18s;
-      letter-spacing: 0.3px; white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 10px;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.92rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
       text-decoration: none;
     }
+
     .btn-primary {
       background: linear-gradient(135deg, var(--accent), var(--accent2));
       color: white;
+      box-shadow: 0 4px 18px rgba(99, 102, 241, 0.4);
     }
+
     .btn-primary:hover:not(:disabled) {
-      transform: translateY(-1px);
-      box-shadow: 0 6px 22px rgba(99,102,241,0.38);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 24px rgba(99, 102, 241, 0.55);
     }
-    .btn-primary:active:not(:disabled) { transform: translateY(0); }
+
+    .btn-primary:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
     .btn-secondary {
-      background: var(--surface); color: var(--text);
+      background: var(--surface);
       border: 1px solid var(--border);
+      color: var(--text);
     }
-    .btn-secondary:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
-    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
-    .btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
 
-    /* ── Progress bar ────────────────────────────────────────────── */
-    .progress-wrap { margin-top: 14px; display: none; }
-    .progress-wrap.visible { display: block; }
-    .progress-bar {
-      height: 4px; background: var(--border);
-      border-radius: 4px; overflow: hidden;
+    .btn-secondary:hover:not(:disabled) {
+      border-color: var(--accent);
+      color: var(--accent);
     }
-    .progress-fill {
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
+    /* ── Progress Box ──────────────────────────────────────────────────── */
+    .progress-box {
+      display: none;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 20px;
+      margin-top: 20px;
+    }
+
+    .progress-box.active {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .progress-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      font-size: 0.88rem;
+    }
+
+    .progress-status {
+      font-weight: 600;
+      color: #c7d2fe;
+    }
+
+    .progress-pct {
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .progress-bar-wrap {
+      width: 100%;
+      height: 8px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+
+    .progress-bar-fill {
       height: 100%;
-      background: linear-gradient(90deg, var(--accent), var(--accent2));
-      border-radius: 4px;
+      background: linear-gradient(90deg, var(--accent), var(--accent3));
+      border-radius: 8px;
+      width: 0%;
       transition: width 0.35s ease;
-      will-change: width;
-    }
-    .progress-label {
-      margin-top: 6px; font-size: 0.76rem; color: var(--muted);
-      display: flex; justify-content: space-between;
     }
 
-    /* ── Log ─────────────────────────────────────────────────────── */
-    .log {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 10px; padding: 12px 14px;
-      font-size: 0.8rem; max-height: 176px;
+    .stage-steps {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .stage-step {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.76rem;
+      color: var(--muted);
+      opacity: 0.6;
+      transition: all 0.3s ease;
+    }
+
+    .stage-step.active {
+      color: white;
+      opacity: 1;
+      font-weight: 600;
+    }
+
+    .stage-step.done {
+      color: var(--green);
+      opacity: 1;
+    }
+
+    /* ── Generated Result Showcase ─────────────────────────────────────── */
+    .result-section {
+      display: none;
+      animation: fadeIn 0.4s ease;
+    }
+
+    .result-section.active {
+      display: block;
+    }
+
+    .video-showcase {
+      display: flex;
+      gap: 28px;
+      flex-wrap: wrap;
+      align-items: flex-start;
+    }
+
+    .video-player-wrap {
+      flex: 1;
+      min-width: 280px;
+      max-width: 360px;
+      background: #000;
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+      border: 1px solid var(--border);
+      margin: 0 auto;
+    }
+
+    .video-player-wrap.horizontal {
+      max-width: 580px;
+    }
+
+    .video-player-wrap video {
+      width: 100%;
+      height: auto;
+      display: block;
+      border-radius: 18px;
+    }
+
+    .video-meta-wrap {
+      flex: 1.4;
+      min-width: 300px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .video-info-badge {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .info-pill {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .info-pill strong {
+      color: var(--text);
+    }
+
+    .scenes-breakdown {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 16px;
+    }
+
+    .scenes-breakdown h4 {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    .scene-item {
+      padding: 10px 12px;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 8px;
+      margin-bottom: 8px;
+      font-size: 0.85rem;
+      border-left: 3px solid var(--accent);
+    }
+
+    .scene-item-title {
+      font-weight: 600;
+      color: #c7d2fe;
+      margin-bottom: 4px;
+    }
+
+    .scene-item-text {
+      color: var(--text);
+      font-size: 0.82rem;
+      line-height: 1.4;
+    }
+
+    /* ── Splitter Tab (Upload Section) ─────────────────────────────────── */
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+      animation: fadeIn 0.25s ease;
+    }
+
+    .drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: 14px;
+      padding: 44px 20px;
+      text-align: center;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.25s;
+      background: rgba(15, 23, 42, 0.3);
+    }
+
+    .drop-zone:hover, .drop-zone.drag-over {
+      border-color: var(--accent);
+      background: rgba(99, 102, 241, 0.06);
+    }
+
+    .drop-zone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .drop-icon {
+      font-size: 2.8rem;
+      margin-bottom: 10px;
+    }
+
+    #selected-file {
+      margin-top: 10px;
+      font-size: 0.85rem;
+      color: var(--green);
+      font-weight: 500;
+    }
+
+    /* ── Shorts Gallery ────────────────────────────────────────────────── */
+    .shorts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 16px;
+    }
+
+    .short-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+
+    .short-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-2px);
+    }
+
+    .short-card-name {
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: var(--text);
+      margin-bottom: 6px;
+      word-break: break-all;
+    }
+
+    .short-card-meta {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-bottom: 14px;
+    }
+
+    /* ── Activity Log ──────────────────────────────────────────────────── */
+    .log-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+      font-size: 0.82rem;
+      max-height: 160px;
       overflow-y: auto;
-      display: flex; flex-direction: column; gap: 5px;
-      scroll-behavior: smooth;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
     }
+
     .log-entry {
-      display: flex; align-items: flex-start; gap: 8px;
-      animation: fadeSlideIn 0.2s ease;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
     }
-    @keyframes fadeSlideIn {
-      from { opacity: 0; transform: translateY(3px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-    .dot {
-      width: 7px; height: 7px; border-radius: 50%;
-      margin-top: 5px; flex-shrink: 0;
-    }
-    .dot-info    { background: var(--accent); }
-    .dot-success { background: var(--green); }
-    .dot-error   { background: var(--red); }
-    .dot-warn    { background: var(--yellow); }
 
-    /* ── Shorts grid ─────────────────────────────────────────────── */
-    .shorts-grid { display: flex; flex-direction: column; gap: 8px; }
-    .short-item {
-      display: flex; justify-content: space-between; align-items: center;
-      background: var(--surface); border: 1px solid var(--border);
-      padding: 11px 14px; border-radius: 8px;
-      transition: border-color 0.2s;
+    .log-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      margin-top: 5px;
+      flex-shrink: 0;
     }
-    .short-item:hover { border-color: rgba(99,102,241,0.35); }
-    .short-meta { flex: 1; min-width: 0; }
-    .short-name {
-      font-weight: 600; color: var(--text); font-size: 0.88rem;
-      margin-bottom: 3px; white-space: nowrap;
-      overflow: hidden; text-overflow: ellipsis;
+
+    .log-dot-info { background: var(--accent); }
+    .log-dot-success { background: var(--green); }
+    .log-dot-error { background: var(--red); }
+    .log-dot-warn { background: var(--yellow); }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
     }
-    .short-info { font-size: 0.78rem; color: var(--muted); }
-    .short-actions { display: flex; gap: 8px; flex-shrink: 0; margin-left: 12px; }
 
-    .placeholder { color: var(--muted); font-style: italic; font-size: 0.88rem; }
-
-    /* ── Hint text ───────────────────────────────────────────────── */
-    .hint { font-size: 0.83rem; color: var(--muted); margin-bottom: 14px; line-height: 1.5; }
-
-    /* ── Responsive ──────────────────────────────────────────────── */
-    @media (max-width: 600px) {
-      header { padding: 14px 16px; }
-      .container { padding: 24px 14px; }
-      .card { padding: 18px; }
-      .short-item { flex-direction: column; align-items: flex-start; gap: 8px; }
-      .short-actions { margin-left: 0; }
+    @media (max-width: 768px) {
+      header { padding: 14px 20px; }
+      .header-nav { display: none; }
+      .video-showcase { flex-direction: column; }
+      .video-player-wrap { max-width: 100%; }
     }
   </style>
 </head>
 <body>
 
-<!-- ── Header ──────────────────────────────────────────────────────────────── -->
 <header>
-  <div class="logo" aria-hidden="true">🎬</div>
-  <h1>Auto Shorts Generator</h1>
-  <div class="api-status" aria-live="polite">
-    <div class="api-dot" id="api-dot"></div>
-    <span id="api-status-text">Checking server…</span>
+  <a href="#" class="brand">
+    <div class="brand-logo">✨</div>
+    <div class="brand-title">AI Clip Generator</div>
+  </a>
+
+  <div class="header-nav">
+    <button class="nav-tab active" id="tab-ai-btn" onclick="switchTab('ai')">
+      🎬 AI Comment to Video
+    </button>
+    <button class="nav-tab" id="tab-split-btn" onclick="switchTab('split')">
+      ✂️ Video Clipper
+    </button>
   </div>
-  <div class="badge" aria-label="Beta version">BETA</div>
+
+  <div class="api-status">
+    <div class="api-dot" id="api-dot"></div>
+    <span id="api-status-text">Connecting...</span>
+  </div>
 </header>
 
-<main class="container">
+<div class="container">
 
-  <!-- Step 1: Upload -->
-  <section class="card" aria-labelledby="step1-title">
-    <h2 class="card-title" id="step1-title">
-      <span class="step-num" aria-hidden="true">1</span>Upload Long Video
-    </h2>
-    <div class="drop-zone" id="drop-zone" role="button" aria-label="File upload area — drag and drop or click to browse">
-      <input type="file" id="file-input" accept="video/*" aria-label="Select video file"/>
-      <div class="drop-icon" aria-hidden="true">📁</div>
-      <p>Drag &amp; drop your video here, or <span>browse</span></p>
-      <p id="selected-file" aria-live="polite"></p>
-    </div>
-    <div class="btn-row">
-      <button class="btn btn-primary" id="upload-btn" onclick="uploadVideo()" disabled>
-        ⬆️ Upload Video
-      </button>
-    </div>
-    <div class="progress-wrap" id="upload-progress">
-      <div class="progress-bar"><div class="progress-fill" id="upload-fill" style="width:0%"></div></div>
-      <div class="progress-label"><span id="upload-pct">0%</span><span id="upload-eta"></span></div>
-    </div>
-  </section>
+  <!-- ==================================================================== -->
+  <!-- TAB 1: AI VIDEO GENERATION FROM COMMENT                              -->
+  <!-- ==================================================================== -->
+  <div id="tab-ai" class="tab-content active">
 
-  <!-- Step 2: Generate Shorts -->
-  <section class="card" aria-labelledby="step2-title">
-    <h2 class="card-title" id="step2-title">
-      <span class="step-num" aria-hidden="true">2</span>Generate Shorts
-    </h2>
-    <p class="hint">Automatically split the video into fixed-length clips. Stream copy means <strong>no re-encoding</strong> — blazing fast.</p>
-    <div class="form-group">
-      <label for="auto-target">Seconds per short (15 – 120)</label>
-      <input id="auto-target" type="number" value="45" min="15" max="120"/>
+    <div class="hero-banner">
+      <h2>Generate AI Short Video from Comment</h2>
+      <p>Type any comment, question, or viral topic. AI writes the script, speaks in realistic neural voice, generates visual scenes, and adds viral captions!</p>
     </div>
-    <div class="btn-row">
-      <button class="btn btn-primary" id="auto-btn" onclick="autoGenerateShorts()" disabled>
-        ⚡ Generate Shorts
-      </button>
-      <button class="btn btn-secondary" id="view-shorts-btn" onclick="listShorts()">
-        📁 View All Shorts
-      </button>
-    </div>
-    <div class="progress-wrap" id="auto-progress">
-      <div class="progress-bar"><div class="progress-fill" id="auto-fill" style="width:0%"></div></div>
-      <div class="progress-label"><span id="auto-pct">0%</span><span id="auto-status-msg"></span></div>
-    </div>
-  </section>
 
-  <!-- Generated Shorts -->
-  <section class="card" aria-labelledby="shorts-title">
-    <h2 class="card-title" id="shorts-title">Generated Shorts</h2>
-    <div class="btn-row" style="margin-top:0; margin-bottom:12px;">
-      <a class="btn btn-secondary" id="download-all-btn" href="http://localhost:8000/download-all-zip"
-         download="shorts.zip" style="display:none;" aria-label="Download all shorts as ZIP">
-        📦 Download All as ZIP
-      </a>
-      <button class="btn btn-secondary" id="clear-btn" onclick="clearOutputs()" style="display:none;">
-        🗑️ Clear All
-      </button>
+    <!-- AI Generator Card -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">
+          <div class="step-badge">1</div>
+          <span>Enter Comment or Video Idea</span>
+        </div>
+      </div>
+
+      <textarea 
+        id="ai-comment" 
+        class="prompt-box" 
+        placeholder="e.g. Why do cats purr? The hidden healing frequency science discovered..."
+      ></textarea>
+
+      <!-- Preset Idea Chips -->
+      <div class="preset-chips" id="preset-chips">
+        <div class="preset-chip" onclick="fillPreset('Why do cats purr? The hidden healing frequency science discovered.')">
+          🐱 Why Cats Purr
+        </div>
+        <div class="preset-chip" onclick="fillPreset('What happens to your body when crossing the event horizon of a black hole?')">
+          🌌 Black Hole Horizon
+        </div>
+        <div class="preset-chip" onclick="fillPreset('How the 2-minute rule rewires your brain to eliminate procrastination.')">
+          ⚡ 2-Minute Rule
+        </div>
+        <div class="preset-chip" onclick="fillPreset('Terrifying anomalies found 36,000 feet deep in the Mariana Trench.')">
+          🌊 Mariana Trench
+        </div>
+        <div class="preset-chip" onclick="fillPreset('What would happen to Earth within 24 hours if the Moon disappeared?')">
+          🌑 If the Moon Vanished
+        </div>
+      </div>
+
+      <div class="card-header" style="margin-top: 10px; margin-bottom: 14px;">
+        <div class="card-title">
+          <div class="step-badge">2</div>
+          <span>Customization & Style</span>
+        </div>
+      </div>
+
+      <!-- Settings Grid -->
+      <div class="options-grid">
+        <div class="form-group">
+          <label for="ai-voice">AI Voiceover</label>
+          <select id="ai-voice" class="select-input">
+            <option value="en-US-ChristopherNeural" selected>Christopher (Deep Cinematic)</option>
+            <option value="en-US-JennyNeural">Jenny (Natural Clear Female)</option>
+            <option value="en-US-GuyNeural">Guy (Modern Energetic Male)</option>
+            <option value="en-US-AriaNeural">Aria (Expressive Storyteller)</option>
+            <option value="en-GB-RyanNeural">Ryan (British Documentary)</option>
+            <option value="en-GB-SoniaNeural">Sonia (British Refined Female)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="ai-style">Visual Style</label>
+          <select id="ai-style" class="select-input">
+            <option value="cinematic" selected>Cinematic 8K</option>
+            <option value="photorealistic">Photorealistic</option>
+            <option value="cyberpunk">Cyberpunk / Sci-Fi</option>
+            <option value="space">Deep Space</option>
+            <option value="anime">Anime / Fantasy</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="ai-aspect">Aspect Ratio</label>
+          <select id="ai-aspect" class="select-input">
+            <option value="9:16" selected>Vertical 9:16 (Shorts / Reels)</option>
+            <option value="16:9">Horizontal 16:9 (YouTube)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="ai-subtitles">Captions Style</label>
+          <select id="ai-subtitles" class="select-input">
+            <option value="viral_yellow" selected>Viral Bold Yellow</option>
+            <option value="neon_cyan">Electric Cyan</option>
+            <option value="clean_white">Classic White</option>
+            <option value="none">No Subtitles</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Ambient Soundtrack</label>
+          <div class="toggle-row">
+            <label class="switch">
+              <input type="checkbox" id="ai-bg-music" checked>
+              <span class="slider"></span>
+            </label>
+            <span style="font-size:0.85rem; color:var(--text);">Ambient Synth Pad</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex; gap:12px; align-items:center;">
+        <button class="btn btn-primary" id="generate-ai-btn" onclick="generateAIVideo()">
+          🚀 Generate AI Video Short
+        </button>
+        <button class="btn btn-secondary" onclick="loadSavedShorts()">
+          📁 Refresh Library
+        </button>
+      </div>
+
+      <!-- Real-time Progress Box -->
+      <div class="progress-box" id="ai-progress-box">
+        <div class="progress-header">
+          <span class="progress-status" id="ai-progress-status">Crafting script & visual storyboard...</span>
+          <span class="progress-pct" id="ai-progress-pct">0%</span>
+        </div>
+        <div class="progress-bar-wrap">
+          <div class="progress-bar-fill" id="ai-progress-bar"></div>
+        </div>
+        <div class="stage-steps">
+          <div class="stage-step" id="step-script">📝 Script</div>
+          <div class="stage-step" id="step-voice">🎙️ Voiceover</div>
+          <div class="stage-step" id="step-scenes">🎨 AI Visuals</div>
+          <div class="stage-step" id="step-subs">🔤 Captions</div>
+          <div class="stage-step" id="step-done">✨ Final Short</div>
+        </div>
+      </div>
+
     </div>
-    <div id="shorts-list" aria-live="polite" style="min-height:60px">
-      <p class="placeholder">No shorts generated yet. Upload a video and click "Generate Shorts".</p>
+
+    <!-- Generated Video Showcase -->
+    <div class="card result-section" id="ai-result-card">
+      <div class="card-header">
+        <div class="card-title">
+          <span style="color:var(--green)">🎉</span>
+          <span id="result-title">Your AI Video is Ready!</span>
+        </div>
+        <a class="btn btn-primary" id="download-video-btn" download target="_blank">
+          ⬇️ Download MP4
+        </a>
+      </div>
+
+      <div class="video-showcase">
+        <div class="video-player-wrap" id="player-wrap">
+          <video id="ai-video-player" controls playsinline></video>
+        </div>
+
+        <div class="video-meta-wrap">
+          <div class="video-info-badge">
+            <div class="info-pill">Duration: <strong id="res-duration">0:00</strong></div>
+            <div class="info-pill">Size: <strong id="res-size">0 MB</strong></div>
+            <div class="info-pill">Resolution: <strong id="res-res">720x1280</strong></div>
+            <div class="info-pill">Format: <strong id="res-format">Vertical 9:16</strong></div>
+          </div>
+
+          <div class="scenes-breakdown">
+            <h4>🎬 Storyboard & Scene Breakdown</h4>
+            <div id="scenes-list"></div>
+          </div>
+        </div>
+      </div>
     </div>
-  </section>
+
+  </div>
+
+  <!-- ==================================================================== -->
+  <!-- TAB 2: VIDEO CLIPPER (UPLOAD & SPLIT)                                 -->
+  <!-- ==================================================================== -->
+  <div id="tab-split" class="tab-content">
+
+    <div class="hero-banner">
+      <h2>Long Video Splitter & Clipper</h2>
+      <p>Upload a video to instantly slice it into short 30-60 second vertical clips.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">
+          <div class="step-badge">1</div>
+          <span>Upload Video</span>
+        </div>
+      </div>
+
+      <div class="drop-zone" id="drop-zone">
+        <input type="file" id="file-input" accept="video/*"/>
+        <div class="drop-icon">📁</div>
+        <p>Drag & drop your video here, or <span style="color:var(--accent); font-weight:600;">browse files</span></p>
+        <p id="selected-file"></p>
+      </div>
+
+      <div style="margin-top: 16px;">
+        <button class="btn btn-primary" id="upload-btn" onclick="uploadVideo()" disabled>
+          ⬆️ Upload Video
+        </button>
+      </div>
+
+      <div class="progress-box" id="upload-progress-box">
+        <div class="progress-header">
+          <span class="progress-status" id="upload-status-text">Uploading video...</span>
+          <span class="progress-pct" id="upload-pct">0%</span>
+        </div>
+        <div class="progress-bar-wrap">
+          <div class="progress-bar-fill" id="upload-progress-bar"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">
+          <div class="step-badge">2</div>
+          <span>Generate Clips</span>
+        </div>
+      </div>
+
+      <div class="form-group" style="max-width: 320px; margin-bottom: 18px;">
+        <label for="auto-target">Seconds Per Clip</label>
+        <input id="auto-target" class="text-input" type="number" value="45" min="15" max="180"/>
+      </div>
+
+      <div style="display:flex; gap:12px; flex-wrap:wrap;">
+        <button class="btn btn-primary" id="split-btn" onclick="autoGenerateShorts()" disabled>
+          ⚡ Split Video into Shorts
+        </button>
+        <button class="btn btn-secondary" onclick="loadSavedShorts()">
+          📁 View All Shorts
+        </button>
+      </div>
+
+      <div class="progress-box" id="split-progress-box">
+        <div class="progress-header">
+          <span class="progress-status" id="split-status-text">Generating clips...</span>
+          <span class="progress-pct" id="split-pct">0%</span>
+        </div>
+        <div class="progress-bar-wrap">
+          <div class="progress-bar-fill" id="split-progress-bar"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ==================================================================== -->
+  <!-- VIDEO LIBRARY / GENERATED SHORTS GALLERY                             -->
+  <!-- ==================================================================== -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">
+        <span>🎬 Video Library & Shorts</span>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <a href="/download-all-zip" class="btn btn-secondary" style="font-size:0.8rem; padding:8px 14px;">
+          📦 Download All (.ZIP)
+        </a>
+      </div>
+    </div>
+
+    <div id="shorts-gallery" class="shorts-grid">
+      <p style="color:var(--muted); font-size:0.9rem; grid-column:1/-1;">Loading library...</p>
+    </div>
+  </div>
 
   <!-- Activity Log -->
-  <section class="card" aria-labelledby="log-title">
-    <h2 class="card-title" id="log-title">Activity Log</h2>
-    <div class="log" id="log" role="log" aria-live="polite" aria-label="Activity log"></div>
-  </section>
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">
+        <span>📋 System Activity Log</span>
+      </div>
+    </div>
+    <div class="log-box" id="log-box">
+      <div class="log-entry">
+        <div class="log-dot log-dot-info"></div>
+        <span>AI Video Generator initialized and ready.</span>
+      </div>
+    </div>
+  </div>
 
-</main>
+</div>
 
 <script>
-  /* ═══════════════════════════════════════════════════════════════════════════
-   * CONFIGURATION
-   * ═══════════════════════════════════════════════════════════════════════════ */
-  const API = "http://localhost:8000";
-  const MAX_LOG_ENTRIES = 80;          // Cap log size to avoid DOM bloat
-  const API_CHECK_INTERVAL_MS = 15000; // Health check every 15s (was 5s)
-  const UPLOAD_CHUNK_SIZE = 10 * 1024 * 1024;  // 10 MB
-  const UPLOAD_CONCURRENCY = 3;
+  const API = window.location.origin;
+  let uploadedFilename = null;
+  let activeTaskId = null;
+  let progressPoller = null;
 
-  /* ═══════════════════════════════════════════════════════════════════════════
-   * CACHED DOM REFERENCES (queried once at startup)
-   * ═══════════════════════════════════════════════════════════════════════════ */
-  const $ = id => document.getElementById(id);
-  const DOM = {
-    apiDot:          $("api-dot"),
-    apiText:         $("api-status-text"),
-    dropZone:        $("drop-zone"),
-    fileInput:       $("file-input"),
-    selectedFile:    $("selected-file"),
-    uploadBtn:       $("upload-btn"),
-    uploadProgress:  $("upload-progress"),
-    uploadFill:      $("upload-fill"),
-    uploadPct:       $("upload-pct"),
-    uploadEta:       $("upload-eta"),
-    autoBtn:         $("auto-btn"),
-    autoTarget:      $("auto-target"),
-    autoProgress:    $("auto-progress"),
-    autoFill:        $("auto-fill"),
-    autoPct:         $("auto-pct"),
-    autoStatusMsg:   $("auto-status-msg"),
-    shortsList:      $("shorts-list"),
-    downloadAllBtn:  $("download-all-btn"),
-    clearBtn:        $("clear-btn"),
-    log:             $("log"),
-  };
-
-  let uploadedFilename  = null;
-  let progressInterval  = null;
-
-  /* ═══════════════════════════════════════════════════════════════════════════
-   * LOGGING  (XSS-safe via createTextNode)
-   * ═══════════════════════════════════════════════════════════════════════════ */
-  function log(msg, type = "info") {
-    // Trim oldest entries to keep DOM lean
-    while (DOM.log.children.length >= MAX_LOG_ENTRIES) {
-      DOM.log.removeChild(DOM.log.firstChild);
-    }
-    const entry = document.createElement("div");
-    entry.className = "log-entry";
-
-    const dot = document.createElement("div");
-    dot.className = `dot dot-${type}`;
-
-    const text = document.createElement("span");
-    text.appendChild(document.createTextNode(msg));
-
-    entry.appendChild(dot);
-    entry.appendChild(text);
-    DOM.log.appendChild(entry);
-    DOM.log.scrollTop = DOM.log.scrollHeight;
+  // ── Navigation Tabs ──────────────────────────────────────────────────
+  function switchTab(tab) {
+    document.getElementById("tab-ai").classList.toggle("active", tab === "ai");
+    document.getElementById("tab-split").classList.toggle("active", tab === "split");
+    document.getElementById("tab-ai-btn").classList.toggle("active", tab === "ai");
+    document.getElementById("tab-split-btn").classList.toggle("active", tab === "split");
   }
 
-  log("Ready — upload a video to get started.", "info");
-
-  /* ═══════════════════════════════════════════════════════════════════════════
-   * PROGRESS HELPERS
-   * ═══════════════════════════════════════════════════════════════════════════ */
-  function showProgress(wrap, fill, pctEl, statusEl, pct, statusMsg) {
-    wrap.classList.add("visible");
-    fill.style.width = pct + "%";
-    if (pctEl)    pctEl.textContent    = Math.round(pct) + "%";
-    if (statusEl) statusEl.textContent = statusMsg || "";
-  }
-
-  function hideProgress(wrap) {
-    wrap.classList.remove("visible");
-  }
-
-  /* ═══════════════════════════════════════════════════════════════════════════
-   * API HEALTH CHECK
-   * ═══════════════════════════════════════════════════════════════════════════ */
+  // ── API Health Check ──────────────────────────────────────────────────
   async function checkAPI() {
+    const dot = document.getElementById("api-dot");
+    const txt = document.getElementById("api-status-text");
     try {
-      const r = await fetch(API + "/", { signal: AbortSignal.timeout(3000) });
-      if (r.ok) {
-        DOM.apiDot.className  = "api-dot online";
-        DOM.apiText.textContent = "Server online";
-      } else { throw new Error("non-ok"); }
+      const res = await fetch(`${API}/api`, { signal: AbortSignal.timeout(3000) });
+      if (res.ok) {
+        dot.className = "api-dot online";
+        txt.textContent = "Server Online";
+      } else { throw new Error(); }
     } catch {
-      DOM.apiDot.className  = "api-dot offline";
-      DOM.apiText.textContent = "Server offline";
+      dot.className = "api-dot offline";
+      txt.textContent = "Server Offline";
     }
   }
   checkAPI();
-  const _apiTimer = setInterval(checkAPI, API_CHECK_INTERVAL_MS);
+  setInterval(checkAPI, 6000);
 
-  /* ═══════════════════════════════════════════════════════════════════════════
-   * DRAG-AND-DROP
-   * ═══════════════════════════════════════════════════════════════════════════ */
-  DOM.dropZone.addEventListener("dragover", e => {
-    e.preventDefault();
-    DOM.dropZone.classList.add("drag-over");
-  });
-  DOM.dropZone.addEventListener("dragleave", () => DOM.dropZone.classList.remove("drag-over"));
-  DOM.dropZone.addEventListener("drop", e => {
-    e.preventDefault();
-    DOM.dropZone.classList.remove("drag-over");
-    if (e.dataTransfer.files[0]) {
-      DOM.fileInput.files = e.dataTransfer.files;
-      onFileSelected();
-    }
-  });
-  DOM.fileInput.addEventListener("change", onFileSelected);
-
-  function onFileSelected() {
-    const f = DOM.fileInput.files[0];
-    if (!f) return;
-    const sizeMB = (f.size / 1024 / 1024).toFixed(1);
-    DOM.selectedFile.textContent = `📎 ${f.name} (${sizeMB} MB)`;
-    DOM.uploadBtn.disabled = false;
+  // ── Logging ───────────────────────────────────────────────────────────
+  function log(msg, type = "info") {
+    const box = document.getElementById("log-box");
+    const entry = document.createElement("div");
+    entry.className = "log-entry";
+    entry.innerHTML = `<div class="log-dot log-dot-${type}"></div><span>${msg}</span>`;
+    box.appendChild(entry);
+    box.scrollTop = box.scrollHeight;
   }
 
-  /* ═══════════════════════════════════════════════════════════════════════════
-   * UPLOAD  (parallel chunked)
-   * ═══════════════════════════════════════════════════════════════════════════ */
-  async function uploadVideo() {
-    const file = DOM.fileInput.files[0];
-    if (!file) return;
+  // ── Preset Prompt Fill ────────────────────────────────────────────────
+  function fillPreset(text) {
+    const el = document.getElementById("ai-comment");
+    el.value = text;
+    el.focus();
+    log(`Applied prompt preset: "${text.substring(0, 35)}..."`, "info");
+  }
 
-    DOM.uploadBtn.disabled = true;
-    DOM.uploadBtn.textContent = "⏳ Uploading…";
-    showProgress(DOM.uploadProgress, DOM.uploadFill, DOM.uploadPct, DOM.uploadEta, 0, "Starting…");
-
-    const totalChunks = Math.ceil(file.size / UPLOAD_CHUNK_SIZE);
-    const uploadId    = `${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
-    const chunkBytes  = new Array(totalChunks).fill(0); // bytes sent per chunk
-
-    log(`Uploading "${file.name}" in ${totalChunks} chunk(s)…`, "info");
-
-    let startTime   = Date.now();
-    let chunkIndex  = 0;
-    let active      = 0;
-    let failed      = false;
-
-    function updateProgress() {
-      const sent    = chunkBytes.reduce((a, b) => a + b, 0);
-      const pct     = Math.min(99, (sent / file.size) * 100);
-      const elapsed = (Date.now() - startTime) / 1000;
-      const speed   = sent / elapsed;           // bytes/sec
-      const eta     = speed > 0 ? Math.round((file.size - sent) / speed) : 0;
-      showProgress(DOM.uploadProgress, DOM.uploadFill, DOM.uploadPct, DOM.uploadEta,
-                   pct, eta > 0 ? `~${eta}s left` : "");
-      DOM.uploadBtn.textContent = `⏳ ${Math.round(pct)}%`;
+  // ── AI Video Generation ───────────────────────────────────────────────
+  async function generateAIVideo() {
+    const comment = document.getElementById("ai-comment").value.trim();
+    if (!comment) {
+      alert("Please enter a comment or topic for the video!");
+      document.getElementById("ai-comment").focus();
+      return;
     }
 
-    return new Promise((resolve, reject) => {
-      function next() {
-        if (failed) return;
-        if (chunkIndex >= totalChunks) {
-          if (active === 0) mergeChunks();
-          return;
+    const voice = document.getElementById("ai-voice").value;
+    const style = document.getElementById("ai-style").value;
+    const aspect = document.getElementById("ai-aspect").value;
+    const subs = document.getElementById("ai-subtitles").value;
+    const bgMusic = document.getElementById("ai-bg-music").checked;
+
+    const btn = document.getElementById("generate-ai-btn");
+    btn.disabled = true;
+
+    // Show progress UI
+    const pBox = document.getElementById("ai-progress-box");
+    pBox.classList.add("active");
+    updateProgressUI(5, "Analyzing comment & writing script...");
+    setStage(1);
+
+    const taskId = "ai_gen_" + Date.now();
+    activeTaskId = taskId;
+
+    // Start progress polling
+    progressPoller = setInterval(async () => {
+      try {
+        const r = await fetch(`${API}/progress/${activeTaskId}`);
+        if (r.ok) {
+          const data = await r.json();
+          if (data && data.percent !== undefined) {
+            updateProgressUI(data.percent, data.status);
+            if (data.percent >= 10 && data.percent < 30) setStage(1);
+            else if (data.percent >= 30 && data.percent < 50) setStage(2);
+            else if (data.percent >= 50 && data.percent < 75) setStage(3);
+            else if (data.percent >= 75 && data.percent < 92) setStage(4);
+            else if (data.percent >= 92) setStage(5);
+          }
         }
-        while (active < UPLOAD_CONCURRENCY && chunkIndex < totalChunks) {
-          sendChunk(chunkIndex++);
-        }
+      } catch (e) {}
+    }, 1200);
+
+    log(`Generating AI Video from comment: "${comment.substring(0, 45)}..."`, "info");
+
+    try {
+      const res = await fetch(`${API}/api/generate-ai-video`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          comment: comment,
+          voice_id: voice,
+          aspect_ratio: aspect,
+          style: style,
+          subtitle_style: subs,
+          use_bg_music: bgMusic,
+          target_duration: 30,
+          task_id: taskId
+        })
+      });
+
+      clearInterval(progressPoller);
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.detail || "Generation failed");
       }
 
-      function sendChunk(idx) {
-        active++;
-        const start = idx * UPLOAD_CHUNK_SIZE;
-        const blob  = file.slice(start, Math.min(file.size, start + UPLOAD_CHUNK_SIZE));
-        const fd    = new FormData();
-        fd.append("chunk", blob);
-        fd.append("chunk_index", idx);
-        fd.append("total_chunks", totalChunks);
-        fd.append("filename", file.name);
-        fd.append("upload_id", uploadId);
+      const result = await res.json();
+      updateProgressUI(100, "Complete!");
+      setStage(5);
+      log(`✅ AI Video ready: ${result.filename} (${result.duration_formatted})`, "success");
 
-        const xhr = new XMLHttpRequest();
-        xhr.upload.addEventListener("progress", e => {
-          if (e.lengthComputable) { chunkBytes[idx] = e.loaded; updateProgress(); }
-        });
-        xhr.onreadystatechange = () => {
-          if (xhr.readyState !== XMLHttpRequest.DONE) return;
-          active--;
-          if (failed) return;
-          if (xhr.status === 200) {
-            try {
-              const resp = JSON.parse(xhr.responseText);
-              if (resp.status === "chunk_saved") {
-                chunkBytes[idx] = blob.size;
-                updateProgress();
-                next();
-              } else { fail("Chunk error: " + (resp.detail || resp.error || "unknown")); }
-            } catch { fail("Response parse error"); }
-          } else { fail("Network error (chunk " + idx + ")"); }
-        };
-        xhr.open("POST", `${API}/upload-chunk`);
-        xhr.send(fd);
-      }
+      // Display Video Result Showcase
+      showVideoResult(result);
+      loadSavedShorts();
 
-      async function mergeChunks() {
-        log("All chunks sent — merging on server…", "info");
-        try {
-          const res  = await fetch(`${API}/merge-chunks`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ upload_id: uploadId, filename: file.name, total_chunks: totalChunks }),
-          });
-          const data = await res.json();
-          if (res.ok && data.status === "success") {
-            uploadedFilename = data.filename;
-            showProgress(DOM.uploadProgress, DOM.uploadFill, DOM.uploadPct, DOM.uploadEta, 100, "Done!");
-            log(`✅ Uploaded: ${data.filename} (${data.size_gb} GB)`, "success");
-            DOM.autoBtn.disabled = false;
-            DOM.uploadBtn.textContent = "⬆️ Upload Video";
-            DOM.uploadBtn.disabled   = false;
-            resolve();
-          } else { fail("Merge failed: " + (data.detail || data.error || "unknown")); }
-        } catch (e) { fail("Merge error: " + e.message); }
-      }
+    } catch (err) {
+      clearInterval(progressPoller);
+      log(`❌ Generation failed: ${err.message}`, "error");
+      alert(`AI Video Generation error: ${err.message}`);
+    } finally {
+      btn.disabled = false;
+    }
+  }
 
-      function fail(msg) {
-        failed = true;
-        log("❌ " + msg, "error");
-        DOM.uploadBtn.textContent = "⬆️ Upload Video";
-        DOM.uploadBtn.disabled   = false;
-        hideProgress(DOM.uploadProgress);
-        reject(new Error(msg));
-      }
+  function updateProgressUI(pct, text) {
+    document.getElementById("ai-progress-bar").style.width = pct + "%";
+    document.getElementById("ai-progress-pct").textContent = pct + "%";
+    if (text) document.getElementById("ai-progress-status").textContent = text;
+  }
 
-      next();
+  function setStage(num) {
+    const steps = [
+      document.getElementById("step-script"),
+      document.getElementById("step-voice"),
+      document.getElementById("step-scenes"),
+      document.getElementById("step-subs"),
+      document.getElementById("step-done")
+    ];
+    steps.forEach((s, idx) => {
+      s.classList.toggle("done", idx + 1 < num);
+      s.classList.toggle("active", idx + 1 === num);
     });
   }
 
-  /* ═══════════════════════════════════════════════════════════════════════════
-   * GENERATE SHORTS
-   * ═══════════════════════════════════════════════════════════════════════════ */
-  async function autoGenerateShorts() {
-    if (!uploadedFilename) { log("Upload a video first!", "warn"); return; }
+  function showVideoResult(data) {
+    const card = document.getElementById("ai-result-card");
+    card.classList.add("active");
 
-    const target = parseInt(DOM.autoTarget.value || "45", 10);
-    DOM.autoBtn.disabled = true;
-    DOM.autoBtn.textContent = "⚡ Generating…";
-    showProgress(DOM.autoProgress, DOM.autoFill, DOM.autoPct, DOM.autoStatusMsg, 0, "Starting…");
-    log(`Generating ${target}s clips from "${uploadedFilename}"…`, "info");
+    const player = document.getElementById("ai-video-player");
+    player.src = `${API}${data.download_url}`;
+    player.load();
+    player.play().catch(() => {});
 
-    // Adaptive polling: starts fast, slows after confirming progress
-    const taskId = uploadedFilename.replace(/\.[^.]+$/, "");
-    let lastPct   = 0;
-    let pollMs    = 350;
+    const wrap = document.getElementById("player-wrap");
+    wrap.classList.toggle("horizontal", data.aspect_ratio === "16:9");
 
-    function schedulePoll() {
-      progressInterval = setTimeout(async () => {
-        try {
-          const r = await fetch(`${API}/progress/${taskId}`);
-          const d = await r.json();
-          if (typeof d.percent === "number") {
-            showProgress(DOM.autoProgress, DOM.autoFill, DOM.autoPct, DOM.autoStatusMsg,
-                         d.percent, d.status || "");
-            if (d.percent > lastPct) { lastPct = d.percent; pollMs = 350; }
-            else                     { pollMs = Math.min(pollMs + 100, 1200); }
-          }
-        } catch { /* ignore transient errors */ }
-        if (progressInterval !== null) schedulePoll();
-      }, pollMs);
+    document.getElementById("download-video-btn").href = `${API}${data.download_url}`;
+    document.getElementById("res-duration").textContent = data.duration_formatted || `${data.duration}s`;
+    document.getElementById("res-size").textContent = `${data.file_size_mb} MB`;
+    document.getElementById("res-res").textContent = data.resolution;
+    document.getElementById("res-format").textContent = data.aspect_ratio === "16:9" ? "Horizontal 16:9" : "Vertical 9:16";
+
+    // Scenes breakdown
+    const scenesList = document.getElementById("scenes-list");
+    scenesList.innerHTML = "";
+    if (data.scenes && data.scenes.length) {
+      data.scenes.forEach(sc => {
+        const d = document.createElement("div");
+        d.className = "scene-item";
+        d.innerHTML = `
+          <div class="scene-item-title">${sc.title} (${sc.duration || 4}s)</div>
+          <div class="scene-item-text">"${sc.narration}"</div>
+        `;
+        scenesList.appendChild(d);
+      });
     }
-    schedulePoll();
 
-    try {
-      const url = `${API}/auto-shorts?filename=${encodeURIComponent(uploadedFilename)}&target_duration=${target}`;
-      const res  = await fetch(url, { method: "POST" });
-      const data = await res.json();
+    card.scrollIntoView({ behavior: "smooth" });
+  }
 
-      // Stop polling
-      clearTimeout(progressInterval);
-      progressInterval = null;
+  // ── File Upload (Clipper Tab) ─────────────────────────────────────────
+  const dz = document.getElementById("drop-zone");
+  const fi = document.getElementById("file-input");
 
-      if (res.ok && data.shorts && data.shorts.length > 0) {
-        showProgress(DOM.autoProgress, DOM.autoFill, DOM.autoPct, DOM.autoStatusMsg, 100, "Complete!");
-        log(`✅ Created ${data.total_shorts} shorts (${data.file_size_gb} GB source).`, "success");
-        renderShortsList(data.shorts);
-      } else {
-        log("❌ " + (data.detail || data.error || "Generation failed"), "error");
-      }
-    } catch (e) {
-      clearTimeout(progressInterval);
-      progressInterval = null;
-      log("❌ Generate error: " + e.message, "error");
-    } finally {
-      DOM.autoBtn.disabled = false;
-      DOM.autoBtn.textContent = "⚡ Generate Shorts";
+  dz.addEventListener("dragover", e => { e.preventDefault(); dz.classList.add("drag-over"); });
+  dz.addEventListener("dragleave", () => dz.classList.remove("drag-over"));
+  dz.addEventListener("drop", e => {
+    e.preventDefault();
+    dz.classList.remove("drag-over");
+    if (e.dataTransfer.files[0]) {
+      fi.files = e.dataTransfer.files;
+      onFileSelect();
+    }
+  });
+  fi.addEventListener("change", onFileSelect);
+
+  function onFileSelect() {
+    const f = fi.files[0];
+    if (f) {
+      document.getElementById("selected-file").textContent = `📎 ${f.name} (${(f.size / 1024 / 1024).toFixed(1)} MB)`;
+      document.getElementById("upload-btn").disabled = false;
     }
   }
 
-  /* ═══════════════════════════════════════════════════════════════════════════
-   * LIST & RENDER SHORTS
-   * ═══════════════════════════════════════════════════════════════════════════ */
-  async function listShorts() {
+  async function uploadVideo() {
+    const f = fi.files[0];
+    if (!f) return;
+
+    const btn = document.getElementById("upload-btn");
+    btn.disabled = true;
+
+    const pBox = document.getElementById("upload-progress-box");
+    pBox.classList.add("active");
+    document.getElementById("upload-progress-bar").style.width = "30%";
+    document.getElementById("upload-pct").textContent = "30%";
+    log(`Uploading ${f.name}...`, "info");
+
     try {
-      const res  = await fetch(`${API}/list-shorts`);
+      const fd = new FormData();
+      fd.append("file", f);
+      const res = await fetch(`${API}/upload`, { method: "POST", body: fd });
+      const data = await res.json();
+
+      if (data.status === "success") {
+        uploadedFilename = data.filename;
+        document.getElementById("upload-progress-bar").style.width = "100%";
+        document.getElementById("upload-pct").textContent = "100%";
+        document.getElementById("upload-status-text").textContent = "Upload Complete!";
+        document.getElementById("split-btn").disabled = false;
+        log(`✅ Video uploaded: ${data.filename} (${data.duration_formatted})`, "success");
+      } else {
+        throw new Error(data.detail || "Upload error");
+      }
+    } catch (err) {
+      log(`❌ Upload failed: ${err.message}`, "error");
+      alert(`Upload failed: ${err.message}`);
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  async function autoGenerateShorts() {
+    if (!uploadedFilename) {
+      alert("Please upload a video first!");
+      return;
+    }
+    const target = parseInt(document.getElementById("auto-target").value || "45", 10);
+    const btn = document.getElementById("split-btn");
+    btn.disabled = true;
+
+    const pBox = document.getElementById("split-progress-box");
+    pBox.classList.add("active");
+    document.getElementById("split-progress-bar").style.width = "20%";
+    document.getElementById("split-pct").textContent = "20%";
+    document.getElementById("split-status-text").textContent = "Slicing video into clips...";
+    log(`Slicing video into ${target}s clips...`, "info");
+
+    try {
+      const res = await fetch(`${API}/auto-shorts?filename=${encodeURIComponent(uploadedFilename)}&target_duration=${target}`, {
+        method: "POST"
+      });
       const data = await res.json();
       if (data.shorts && data.shorts.length > 0) {
-        log(`📁 Found ${data.count} shorts.`, "info");
-        renderShortsList(data.shorts);
+        document.getElementById("split-progress-bar").style.width = "100%";
+        document.getElementById("split-pct").textContent = "100%";
+        document.getElementById("split-status-text").textContent = "Clips Created!";
+        log(`✅ Generated ${data.total_shorts} short clips!`, "success");
+        loadSavedShorts();
       } else {
-        log("No shorts found.", "warn");
-        DOM.shortsList.innerHTML = '<p class="placeholder">No shorts available yet.</p>';
+        throw new Error(data.detail || "Failed to split clips");
       }
-    } catch (e) { log("Error listing shorts: " + e.message, "error"); }
-  }
-
-  function renderShortsList(shorts) {
-    // Build DOM via fragment — avoids repeated reflows
-    const frag = document.createDocumentFragment();
-    const grid = document.createElement("div");
-    grid.className = "shorts-grid";
-
-    shorts.forEach(s => {
-      if (s.error) return; // skip failed clips silently
-
-      const item = document.createElement("div");
-      item.className = "short-item";
-
-      const meta = document.createElement("div");
-      meta.className = "short-meta";
-
-      const name = document.createElement("div");
-      name.className = "short-name";
-      name.appendChild(document.createTextNode(s.filename));
-
-      const info = document.createElement("div");
-      info.className = "short-info";
-      const parts = [];
-      if (s.file_size_mb) parts.push(s.file_size_mb + " MB");
-      if (s.duration_formatted || s.duration) parts.push(s.duration_formatted || s.duration + "s");
-      info.appendChild(document.createTextNode(parts.join(" · ")));
-
-      meta.appendChild(name);
-      meta.appendChild(info);
-
-      const actions = document.createElement("div");
-      actions.className = "short-actions";
-
-      const dl = document.createElement("a");
-      dl.className = "btn btn-secondary";
-      dl.href      = API + (s.download_url || `/download/${s.filename}`);
-      dl.download  = s.filename;
-      dl.setAttribute("aria-label", `Download ${s.filename}`);
-      dl.appendChild(document.createTextNode("⬇️ Download"));
-
-      actions.appendChild(dl);
-      item.appendChild(meta);
-      item.appendChild(actions);
-      grid.appendChild(item);
-    });
-
-    frag.appendChild(grid);
-    DOM.shortsList.innerHTML = "";
-    DOM.shortsList.appendChild(frag);
-
-    // Show action buttons if we have any successful shorts
-    const successCount = shorts.filter(s => !s.error).length;
-    if (successCount > 0) {
-      DOM.downloadAllBtn.style.display = "inline-flex";
-      DOM.clearBtn.style.display       = "inline-flex";
+    } catch (err) {
+      log(`❌ Split failed: ${err.message}`, "error");
+      alert(`Split error: ${err.message}`);
+    } finally {
+      btn.disabled = false;
     }
   }
 
-  /* ═══════════════════════════════════════════════════════════════════════════
-   * CLEAR OUTPUTS
-   * ═══════════════════════════════════════════════════════════════════════════ */
-  async function clearOutputs() {
-    if (!confirm("Delete all generated shorts?")) return;
+  // ── Load Video Library ────────────────────────────────────────────────
+  async function loadSavedShorts() {
+    const gallery = document.getElementById("shorts-gallery");
     try {
-      const res = await fetch(`${API}/clear-outputs`, { method: "POST" });
-      const d   = await res.json();
-      log(`🗑️ Cleared ${d.files_deleted} file(s).`, "info");
-      DOM.shortsList.innerHTML = '<p class="placeholder">No shorts generated yet.</p>';
-      DOM.downloadAllBtn.style.display = "none";
-      DOM.clearBtn.style.display       = "none";
-    } catch (e) { log("Clear error: " + e.message, "error"); }
+      const res = await fetch(`${API}/list-shorts`);
+      const data = await res.json();
+
+      if (!data.shorts || data.shorts.length === 0) {
+        gallery.innerHTML = `<p style="color:var(--muted); font-size:0.9rem; grid-column:1/-1;">No videos generated yet. Create one above!</p>`;
+        return;
+      }
+
+      gallery.innerHTML = "";
+      data.shorts.forEach(s => {
+        const isAI = s.filename.startsWith("ai_short_");
+        const card = document.createElement("div");
+        card.className = "short-card";
+        card.innerHTML = `
+          <div>
+            <div style="font-size:0.75rem; color:${isAI ? 'var(--accent)' : 'var(--cyan)'}; font-weight:700; margin-bottom:4px;">
+              ${isAI ? '✨ AI GENERATED SHORT' : '✂️ CLIPPED SHORT'}
+            </div>
+            <div class="short-card-name">${s.filename}</div>
+            <div class="short-card-meta">${s.file_size_mb ? s.file_size_mb + ' MB' : ''}</div>
+          </div>
+          <div style="display:flex; gap:8px; margin-top:10px;">
+            <a class="btn btn-primary" style="flex:1; padding:8px 12px; font-size:0.82rem;" href="${API}${s.download_url}" target="_blank">
+              ▶️ Play
+            </a>
+            <a class="btn btn-secondary" style="flex:1; padding:8px 12px; font-size:0.82rem;" href="${API}${s.download_url}" download>
+              ⬇️ Save
+            </a>
+          </div>
+        `;
+        gallery.appendChild(card);
+      });
+    } catch (err) {
+      gallery.innerHTML = `<p style="color:var(--red); font-size:0.85rem; grid-column:1/-1;">Error loading library: ${err.message}</p>`;
+    }
   }
 
-  /* ═══════════════════════════════════════════════════════════════════════════
-   * CLEANUP on page unload
-   * ═══════════════════════════════════════════════════════════════════════════ */
-  window.addEventListener("beforeunload", () => {
-    clearInterval(_apiTimer);
-    if (progressInterval) clearTimeout(progressInterval);
-  });
+  // Initial load
+  loadSavedShorts();
 </script>
 </body>
 </html>
