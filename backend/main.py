@@ -39,9 +39,15 @@ app.add_middleware(
 UPLOAD_FOLDER = "uploads"
 OUTPUT_FOLDER = "outputs"
 FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
-INDEX_HTML_PATH = FRONTEND_DIR / "index_simple.html"
+INDEX_HTML_PATH = FRONTEND_DIR / "index.html"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
+
+# Import AI Video Generation Engine
+try:
+    from ai_video_engine import create_ai_short_video, AVAILABLE_VOICES, POPULAR_PRESETS
+except ImportError:
+    from .ai_video_engine import create_ai_short_video, AVAILABLE_VOICES, POPULAR_PRESETS
 
 # Absolute path to ffmpeg
 FFMPEG_PATH = r"C:\Users\hp\AppData\Local\Microsoft\WinGet\Packages\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\ffmpeg-8.1.1-full_build\bin\ffmpeg.exe"
@@ -156,7 +162,29 @@ def api_info():
     }
 
 
-# ── Chunked upload ────────────────────────────────────────────────────────────
+# ── Direct & Chunked upload ───────────────────────────────────────────────────
+
+@app.post("/upload")
+async def upload_direct(file: UploadFile = File(...)):
+    """Receive a full video upload in streaming 4MB chunks."""
+    safe_name = safe_filename(file.filename)
+    filepath = os.path.join(UPLOAD_FOLDER, safe_name)
+    try:
+        with open(filepath, "wb") as f:
+            while chunk := await file.read(4 * 1024 * 1024):
+                f.write(chunk)
+        duration = get_video_duration(filepath)
+        size_mb = round(os.path.getsize(filepath) / (1024 * 1024), 2)
+        return {
+            "status": "success",
+            "filename": safe_name,
+            "duration": duration,
+            "duration_formatted": format_duration(duration),
+            "size_mb": size_mb,
+        }
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Failed to upload: {exc}")
+
 
 @app.post("/upload-chunk")
 async def upload_chunk(
@@ -422,3 +450,79 @@ def clear_outputs():
         return {"status": "cleared", "files_deleted": deleted}
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
+
+
+# ── AI Video Generation (Comment to Short) ───────────────────────────────────
+
+class AIVideoRequest(BaseModel):
+    comment: str
+    voice_id: str = "en-US-ChristopherNeural"
+    aspect_ratio: str = "9:16"
+    style: str = "cinematic"
+    subtitle_style: str = "viral_yellow"
+    use_bg_music: bool = True
+    target_duration: int = 30
+    task_id: str | None = None
+
+
+@app.get("/api/voices")
+def get_voices():
+    """List available neural voices."""
+    return {"voices": AVAILABLE_VOICES}
+
+
+@app.get("/api/presets")
+def get_presets():
+    """List sample comments and prompt presets for viral video creation."""
+    return {"presets": POPULAR_PRESETS}
+
+
+@app.post("/api/generate-ai-video")
+def generate_ai_video(req: AIVideoRequest):
+    """
+    Generate an AI Short video from any comment, prompt, or topic.
+    Includes scriptwriting, neural TTS voiceover, AI visuals, Ken Burns motion,
+    viral captions, and ambient soundtrack mixing.
+    """
+    if not req.comment or not req.comment.strip():
+        raise HTTPException(status_code=400, detail="Comment / prompt cannot be empty.")
+
+    task_id = req.task_id or f"ai_gen_{int(time.time())}"
+    write_progress(task_id, 5, "Initializing AI video generation...")
+
+    def progress_callback(pct: int, msg: str):
+        write_progress(task_id, pct, msg)
+
+    try:
+        result = create_ai_short_video(
+            comment=req.comment,
+            output_dir=OUTPUT_FOLDER,
+            voice_id=req.voice_id,
+            aspect_ratio=req.aspect_ratio,
+            style=req.style,
+            subtitle_style=req.subtitle_style,
+            use_bg_music=req.use_bg_music,
+            target_duration=req.target_duration,
+            progress_callback=progress_callback
+        )
+        write_progress(task_id, 100, "Complete!")
+        return result
+    except Exception as exc:
+        write_progress(task_id, 0, f"Error: {exc}")
+        raise HTTPException(status_code=500, detail=f"AI video generation failed: {exc}")
+
+
+@app.get("/api/ai-shorts")
+def list_ai_shorts():
+    """List all AI generated shorts with metadata and scenes."""
+    items = []
+    if os.path.exists(OUTPUT_FOLDER):
+        for fname in sorted(os.listdir(OUTPUT_FOLDER), reverse=True):
+            if fname.startswith("ai_short_") and fname.endswith(".json"):
+                try:
+                    with open(os.path.join(OUTPUT_FOLDER, fname), "r", encoding="utf-8") as f:
+                        meta = json.load(f)
+                    items.append(meta)
+                except Exception:
+                    pass
+    return {"ai_shorts": items, "count": len(items)}
