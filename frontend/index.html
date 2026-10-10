@@ -1034,7 +1034,9 @@
 </div>
 
 <script>
-  const API = window.location.origin;
+  const API = (window.location.protocol.startsWith("http") && window.location.port === "8000")
+    ? window.location.origin
+    : "http://localhost:8000";
   let uploadedFilename = null;
   let activeTaskId = null;
   let progressPoller = null;
