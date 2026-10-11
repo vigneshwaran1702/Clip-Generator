@@ -45,31 +45,149 @@ AVAILABLE_VOICES = [
     {"id": "en-GB-SoniaNeural", "name": "Sonia (British)", "gender": "Female", "tone": "Warm, Crisp & Refined"},
 ]
 
+STYLE_CONFIGS = {
+    "anime": {
+        "name": "Anime / Manga",
+        "badge": "🌸 Anime",
+        "prompt_prefix": "masterpiece Japanese anime visual, beautiful anime aesthetic, vibrant cel shading, Makoto Shinkai and Ufotable style, Studio Ghibli art,",
+        "prompt_suffix": ", high resolution anime screenshot, detailed anime artwork, 8k",
+        "colors": [
+            ((35, 15, 55), (244, 114, 182)),
+            ((15, 30, 65), (96, 165, 250)),
+            ((45, 20, 50), (192, 132, 252)),
+            ((15, 35, 50), (56, 189, 248)),
+        ],
+        "default_voice": "en-US-AriaNeural"
+    },
+    "liveaction": {
+        "name": "Live Action / Cinematic Realism",
+        "badge": "🎬 Live Action",
+        "prompt_prefix": "photorealistic live action film still, authentic real life cinematography, 35mm photograph, real human actors, natural lighting,",
+        "prompt_suffix": ", shot on ARRI Alexa 8k, photorealism, sharp depth of field, real Hollywood movie still",
+        "colors": [
+            ((20, 24, 33), (148, 163, 184)),
+            ((35, 26, 18), (217, 119, 6)),
+            ((15, 23, 42), (99, 102, 241)),
+            ((28, 20, 24), (244, 63, 94)),
+        ],
+        "default_voice": "en-US-ChristopherNeural"
+    },
+    "3d_animation": {
+        "name": "3D Animation / Pixar Style",
+        "badge": "🧸 3D Animation",
+        "prompt_prefix": "3D Disney Pixar movie style animation, stylized 3D character render, Octane Render 3D, Unreal Engine 5 cinematic,",
+        "prompt_suffix": ", soft volumetric lighting, colorful 3D animated film still, cute detailed textures",
+        "colors": [
+            ((30, 27, 75), (129, 140, 248)),
+            ((20, 45, 60), (52, 211, 153)),
+            ((67, 20, 7), (251, 146, 60)),
+            ((20, 24, 45), (236, 72, 153)),
+        ],
+        "default_voice": "en-US-GuyNeural"
+    },
+    "cyberpunk": {
+        "name": "Cyberpunk / Sci-Fi",
+        "badge": "⚡ Cyberpunk",
+        "prompt_prefix": "futuristic cyberpunk neon aesthetic, glowing neon reflections, high-tech dystopian city, synthwave colors,",
+        "prompt_suffix": ", volumetric fog, neon blue and magenta lighting, 8k cinematic render",
+        "colors": [
+            ((15, 10, 35), (236, 72, 153)),
+            ((10, 25, 40), (6, 182, 212)),
+            ((25, 10, 40), (168, 85, 247)),
+            ((10, 15, 30), (34, 197, 94)),
+        ],
+        "default_voice": "en-US-GuyNeural"
+    },
+    "cinematic": {
+        "name": "Cinematic 8K",
+        "badge": "🎥 Cinematic 8K",
+        "prompt_prefix": "epic cinematic film still, Hollywood movie production, anamorphic lens flare, dramatic chiaroscuro lighting,",
+        "prompt_suffix": ", 8k resolution, award winning cinematography, masterclass color grade",
+        "colors": [
+            ((15, 23, 42), (99, 102, 241)),
+            ((10, 15, 30), (13, 148, 136)),
+            ((24, 10, 35), (236, 72, 153)),
+            ((17, 24, 39), (245, 158, 11)),
+        ],
+        "default_voice": "en-US-ChristopherNeural"
+    },
+    "comic": {
+        "name": "Comic Book / Graphic Novel",
+        "badge": "📚 Comic Book",
+        "prompt_prefix": "vintage comic book style illustration, graphic novel panel art, bold black ink lines, halftone pop art textures,",
+        "prompt_suffix": ", dynamic action pose, vibrant comic colors, Marvel DC comic art style",
+        "colors": [
+            ((35, 15, 15), (239, 68, 68)),
+            ((25, 30, 15), (234, 179, 8)),
+            ((15, 20, 40), (59, 130, 246)),
+            ((35, 15, 35), (168, 85, 247)),
+        ],
+        "default_voice": "en-US-GuyNeural"
+    },
+    "fantasy": {
+        "name": "Dark Fantasy / Mythical",
+        "badge": "🏰 Dark Fantasy",
+        "prompt_prefix": "epic dark fantasy illustration, glowing magical runes, mythical ethereal aura, ancient enchanted ruins,",
+        "prompt_suffix": ", matte painting artstation trending, 8k uhd, cinematic fantasy lighting",
+        "colors": [
+            ((25, 15, 35), (192, 132, 252)),
+            ((15, 30, 25), (52, 211, 153)),
+            ((35, 20, 15), (245, 158, 11)),
+            ((20, 20, 35), (96, 165, 250)),
+        ],
+        "default_voice": "en-US-AriaNeural"
+    },
+    "documentary": {
+        "name": "Nature / Documentary",
+        "badge": "🌿 Documentary",
+        "prompt_prefix": "National Geographic 8k wildlife and nature documentary still, ultra realistic natural lighting, photorealistic BBC Earth shot,",
+        "prompt_suffix": ", macro detail, high speed camera shutter, authentic realism",
+        "colors": [
+            ((15, 28, 20), (34, 197, 94)),
+            ((25, 25, 15), (234, 179, 8)),
+            ((15, 23, 35), (56, 189, 248)),
+            ((28, 18, 12), (249, 115, 22)),
+        ],
+        "default_voice": "en-GB-RyanNeural"
+    }
+}
+
 POPULAR_PRESETS = [
     {
-        "title": "Why Cats Purr",
-        "comment": "Why do cats purr? The hidden healing frequency science discovered.",
-        "style": "cinematic"
+        "title": "🌸 The Secret Shinobi Awakening",
+        "comment": "In the hidden peaks of Mount Fuji, an ancient clan awakens elemental shadow arts.",
+        "style": "anime",
+        "type_label": "Anime"
     },
     {
-        "title": "Black Hole Horizon",
-        "comment": "What actually happens to your body when you cross the event horizon of a black hole?",
-        "style": "space"
+        "title": "🎬 The Lost Subterranean City",
+        "comment": "Archaeologists discover an underground metropolis built 3,000 feet beneath the desert.",
+        "style": "liveaction",
+        "type_label": "Live Action"
     },
     {
-        "title": "The 2-Minute Rule",
-        "comment": "How the 2-minute rule can rewire your brain and crush procrastination instantly.",
-        "style": "photorealistic"
+        "title": "🧸 The Clockwork Toy Robot",
+        "comment": "A tiny clockwork robot wakes up alone in an antique workshop and sets out to fix its maker.",
+        "style": "3d_animation",
+        "type_label": "3D Animation"
     },
     {
-        "title": "Mariana Trench Mystery",
-        "comment": "Terrifying creatures and anomalies found 36,000 feet deep in the Mariana Trench.",
-        "style": "cyberpunk"
+        "title": "⚡ Cyberpunk Neon Data Heist",
+        "comment": "In Neo-Tokyo 2099, neural hackers infiltrate an orbital mega-corporation databank.",
+        "style": "cyberpunk",
+        "type_label": "Cyberpunk"
     },
     {
-        "title": "What If the Moon Vanished?",
-        "comment": "What would happen to Earth within 24 hours if the Moon suddenly disappeared?",
-        "style": "cinematic"
+        "title": "🎥 Event Horizon of a Black Hole",
+        "comment": "What actually happens to your body when you cross the event horizon of a supermassive black hole?",
+        "style": "cinematic",
+        "type_label": "Cinematic 8K"
+    },
+    {
+        "title": "🌿 The Immortal Bioluminescent Jellyfish",
+        "comment": "The mysterious ocean species capable of reverting its cells back to infancy and living forever.",
+        "style": "documentary",
+        "type_label": "Documentary"
     }
 ]
 
