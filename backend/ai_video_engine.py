@@ -154,14 +154,20 @@ STYLE_CONFIGS = {
 
 POPULAR_PRESETS = [
     {
-        "title": "🌸 The Secret Shinobi Awakening",
-        "comment": "In the hidden peaks of Mount Fuji, an ancient clan awakens elemental shadow arts.",
-        "style": "anime",
-        "type_label": "Anime"
-    },
-    {
         "title": "🎬 The Lost Subterranean City",
         "comment": "Archaeologists discover an underground metropolis built 3,000 feet beneath the desert.",
+        "style": "liveaction",
+        "type_label": "Live Action"
+    },
+    {
+        "title": "🎥 Event Horizon of a Black Hole",
+        "comment": "What actually happens to your body when you cross the event horizon of a supermassive black hole?",
+        "style": "cinematic",
+        "type_label": "Cinematic 8K"
+    },
+    {
+        "title": "🧠 The 2-Minute Habit Rule",
+        "comment": "How the 2-minute rule rewires dopamine receptors in your brain to eliminate procrastination.",
         "style": "liveaction",
         "type_label": "Live Action"
     },
@@ -176,12 +182,6 @@ POPULAR_PRESETS = [
         "comment": "In Neo-Tokyo 2099, neural hackers infiltrate an orbital mega-corporation databank.",
         "style": "cyberpunk",
         "type_label": "Cyberpunk"
-    },
-    {
-        "title": "🎥 Event Horizon of a Black Hole",
-        "comment": "What actually happens to your body when you cross the event horizon of a supermassive black hole?",
-        "style": "cinematic",
-        "type_label": "Cinematic 8K"
     },
     {
         "title": "🌿 The Immortal Bioluminescent Jellyfish",
@@ -206,11 +206,66 @@ def clean_text(text: str) -> str:
     return text
 
 
-def generate_script_from_comment(comment: str, style: str = "cinematic", target_duration: int = 30) -> list[dict]:
-    """Parse or expand user comment into 4 compelling visual scenes."""
+def detect_style_from_comment(comment: str, requested_style: str = "auto") -> str:
+    """
+    Intelligently resolves the visual style.
+    Supports Anime, Live Action, 3D Animation, Cyberpunk, Documentary, Cinematic, and all video types.
+    """
+    clean_req = (requested_style or "").lower().strip()
+    synonyms = {
+        "photorealistic": "liveaction",
+        "real": "liveaction",
+        "realistic": "liveaction",
+        "live_action": "liveaction",
+        "live-action": "liveaction",
+        "3d": "3d_animation",
+        "animation": "3d_animation",
+        "pixar": "3d_animation",
+        "disney": "3d_animation",
+        "space": "cinematic",
+        "manga": "anime",
+        "nature": "documentary",
+        "wildlife": "documentary",
+        "scifi": "cyberpunk",
+        "sci-fi": "cyberpunk"
+    }
+
+    if clean_req and clean_req not in ["auto", "all", "none", ""]:
+        resolved = synonyms.get(clean_req, clean_req)
+        if resolved in STYLE_CONFIGS:
+            return resolved
+
+    lower = (comment or "").lower()
+    # Check if comment specifies style
+    if any(k in lower for k in ["anime", "manga", "ghibli", "naruto", "shonen", "otaku", "cel shade", "cel-shade", "waifu"]):
+        return "anime"
+    if any(k in lower for k in ["live action", "live-action", "real life", "actor", "real person", "photorealistic", "cinematography", "film still"]):
+        return "liveaction"
+    if any(k in lower for k in ["3d animation", "3d", "pixar", "disney", "animated", "animation", "cartoon", "cgi", "toy robot"]):
+        return "3d_animation"
+    if any(k in lower for k in ["cyberpunk", "sci-fi", "scifi", "neon", "futuristic", "matrix", "synthwave", "hacker"]):
+        return "cyberpunk"
+    if any(k in lower for k in ["documentary", "wildlife", "nature", "animal", "national geographic", "bbc earth", "jellyfish", "ocean creature"]):
+        return "documentary"
+    if any(k in lower for k in ["comic", "graphic novel", "marvel", "dc", "superhero", "pop art"]):
+        return "comic"
+    if any(k in lower for k in ["fantasy", "dragon", "magic", "wizard", "mythical", "enchanted", "dungeon", "kingdom"]):
+        return "fantasy"
+    if any(k in lower for k in ["movie", "cinematic", "film", "hollywood"]):
+        return "cinematic"
+
+    return "liveaction"
+
+
+def generate_script_from_comment(comment: str, style: str = "liveaction", target_duration: int = 30) -> list[dict]:
+    """Parse or expand user comment into compelling visual scenes tailored to video style."""
     comment = comment.strip()
     lower = comment.lower()
+    style_cfg = STYLE_CONFIGS.get(style, STYLE_CONFIGS.get("liveaction", {}))
+    style_name = style_cfg.get("name", "Cinematic")
+    hook = comment.rstrip(".!?")
 
+    # If user provided explicit scene breakdown
     if re.search(r'(scene\s*\d+|hook:|beat\s*\d+)', comment, re.IGNORECASE):
         lines = [line.strip() for line in comment.split("\n") if line.strip()]
         scenes = []
@@ -219,11 +274,62 @@ def generate_script_from_comment(comment: str, style: str = "cinematic", target_
             scenes.append({
                 "title": f"Scene {i+1}",
                 "narration": clean_l,
-                "visual_prompt": f"{clean_l[:65]}, {style} style, 8k, photorealistic"
+                "visual_prompt": f"{clean_l[:65]}, {style_name}, 8k highly detailed"
             })
         if scenes:
             return scenes
 
+    # Anime-specific storyline
+    if style == "anime":
+        return [
+            {
+                "title": "The Awakening",
+                "narration": f"In a world where destiny is forged in battle: {hook}.",
+                "visual_prompt": f"Dramatic anime hero staring into glowing horizon, wind blowing hair, vibrant anime aesthetic, {style_cfg.get('prompt_prefix', '')}"
+            },
+            {
+                "title": "The Hidden Power",
+                "narration": "An ancient power stirs, breaking through ancient seals that were locked away for centuries.",
+                "visual_prompt": f"Surging elemental magical aura, vibrant cel shading anime art, Makoto Shinkai style, high detail"
+            },
+            {
+                "title": "The Ultimate Clash",
+                "narration": "When forces collide, only those who master their true willpower can withstand the storm.",
+                "visual_prompt": f"Epic anime confrontation, glowing neon energy sparks, dynamic cinematic action pose, Studio Ghibli art"
+            },
+            {
+                "title": "The Legend",
+                "narration": "Will you be the one to unlock this power? Subscribe and join the journey.",
+                "visual_prompt": f"Majestic anime shrine over breathtaking sunset sky, vibrant cherry blossoms, masterpiece 8k"
+            }
+        ]
+
+    # 3D Animation (Pixar / Stylized)
+    if style == "3d_animation":
+        return [
+            {
+                "title": "The Whimsical Spark",
+                "narration": f"Imagine what happens when curiosity takes over: {hook}.",
+                "visual_prompt": f"Adorable stylized 3D character exploring colorful world, Disney Pixar 3D render, soft volumetric lighting"
+            },
+            {
+                "title": "The Great Adventure",
+                "narration": "Every little corner holds an unexpected surprise waiting to be uncovered.",
+                "visual_prompt": f"Charming 3D animated environment with vibrant glowing details, Octane Render 3D, cute textures"
+            },
+            {
+                "title": "The Discovery",
+                "narration": "With courage and wonder, the answer finally comes to light in the most delightful way.",
+                "visual_prompt": f"Heartwarming 3D character with expressive eyes experiencing joyful wonder, Unreal Engine 5 render"
+            },
+            {
+                "title": "Happy Outro",
+                "narration": "What would you do in this world? Drop your thoughts below!",
+                "visual_prompt": f"Magical colorful sunset in 3D animated fantasy world, high resolution stylized render"
+            }
+        ]
+
+    # Theme detection for Live Action, Cinematic & others
     if any(w in lower for w in ["cat", "dog", "animal", "pet", "creature", "lion", "tiger"]):
         theme = "wildlife"
     elif any(w in lower for w in ["space", "moon", "star", "black hole", "mars", "galaxy", "universe", "planet"]):
@@ -239,29 +345,27 @@ def generate_script_from_comment(comment: str, style: str = "cinematic", target_
     else:
         theme = "general"
 
-    hook = comment.rstrip(".!?")
-
     if theme == "space":
         return [
             {
                 "title": "The Cosmic Hook",
                 "narration": f"Have you ever wondered about this? {hook}.",
-                "visual_prompt": f"Cosmic space anomaly, glowing nebula, cinematic stars, 8k, {style}"
+                "visual_prompt": f"Cosmic space anomaly, glowing nebula, cinematic stars, {style_name}, 8k"
             },
             {
                 "title": "The Phenomenon",
                 "narration": "Deep in the infinite expanse of the universe, gravity and light bend in eerie ways.",
-                "visual_prompt": f"Vast swirling galaxy, glowing accretion disk, cosmic dust, {style}"
+                "visual_prompt": f"Vast swirling galaxy, glowing accretion disk, cosmic dust, {style_name}"
             },
             {
                 "title": "The Revelation",
                 "narration": "Scientists found that time itself stretches, creating an illusion unlike anything on Earth.",
-                "visual_prompt": f"Event horizon bending starlight, vibrant radiant colors, cinematic 8k"
+                "visual_prompt": f"Event horizon bending starlight, radiant cosmic colors, cinematic 8k"
             },
             {
                 "title": "Final Wonder",
                 "narration": "Would you ever dare to venture beyond the unknown? Let us know below.",
-                "visual_prompt": f"Astronaut looking into endless star field, breathtaking view, {style}"
+                "visual_prompt": f"Astronaut looking into endless star field, breathtaking view, {style_name}"
             }
         ]
     elif theme == "mind":
@@ -269,12 +373,12 @@ def generate_script_from_comment(comment: str, style: str = "cinematic", target_
             {
                 "title": "The Mental Shift",
                 "narration": f"Listen closely, because this changes everything: {hook}.",
-                "visual_prompt": f"Glowing human brain with neural synapses firing, neon energy, {style}"
+                "visual_prompt": f"Glowing human brain with neural synapses firing, neon energy, {style_name}"
             },
             {
                 "title": "The Resistance",
                 "narration": "Your brain is hardwired to avoid discomfort, making starting the hardest part.",
-                "visual_prompt": f"Person standing at glowing crossroads, futuristic architectural perspective, {style}"
+                "visual_prompt": f"Person standing at glowing crossroads, dramatic perspective, {style_name}"
             },
             {
                 "title": "The Breakthrough",
@@ -284,7 +388,7 @@ def generate_script_from_comment(comment: str, style: str = "cinematic", target_
             {
                 "title": "Take Action",
                 "narration": "Try this today for just two minutes, and watch your focus transform completely.",
-                "visual_prompt": f"Silhouette looking at vibrant sunrise over modern metropolis, {style}"
+                "visual_prompt": f"Silhouette looking at vibrant sunrise over modern metropolis, {style_name}"
             }
         ]
     elif theme == "wildlife":
@@ -292,21 +396,21 @@ def generate_script_from_comment(comment: str, style: str = "cinematic", target_
             {
                 "title": "The Wild Hook",
                 "narration": f"Here is something you probably never knew: {hook}.",
-                "visual_prompt": f"Majestic cat close up with vibrant eyes, warm natural lighting, 8k, {style}"
+                "visual_prompt": f"Majestic wildlife close up with vibrant eyes, warm natural lighting, {style_name}"
             },
             {
                 "title": "The Frequency",
-                "narration": "This sound vibrates at an exact frequency between twenty and one hundred and forty Hertz.",
+                "narration": "This sound vibrates at an exact frequency that triggers deep cellular regeneration.",
                 "visual_prompt": f"Soundwaves vibrating through golden ethereal light, artistic macro photography"
             },
             {
                 "title": "The Science",
                 "narration": "In medicine, that identical frequency is used to stimulate bone density and tissue repair.",
-                "visual_prompt": f"Feline resting peacefully with subtle healing aura, photorealistic, {style}"
+                "visual_prompt": f"Creature resting peacefully with subtle aura, photorealistic, {style_name}"
             },
             {
                 "title": "The Bond",
-                "narration": "So when they do this beside you, they might just be healing both themselves and you.",
+                "narration": "So when this happens beside you, it might just be healing both of you at once.",
                 "visual_prompt": f"Cozy cinematic sunset sunlight through window, warm emotional atmosphere"
             }
         ]
@@ -315,22 +419,68 @@ def generate_script_from_comment(comment: str, style: str = "cinematic", target_
             {
                 "title": "The Deep Hook",
                 "narration": f"Think you know the oceans? {hook}.",
-                "visual_prompt": f"Dark abyssal ocean trench, bioluminescent glowing organisms, {style}"
+                "visual_prompt": f"Dark abyssal ocean trench, bioluminescent glowing organisms, {style_name}"
             },
             {
                 "title": "The Unknown",
                 "narration": "Over eighty percent of our oceans remain completely unexplored and pitch black.",
-                "visual_prompt": f"Submarine light beam cutting through deep ocean darkness, eerie cavern, {style}"
+                "visual_prompt": f"Submarine light beam cutting through deep ocean darkness, eerie cavern, {style_name}"
             },
             {
                 "title": "The Discovery",
                 "narration": "At crushing pressures, creatures thrive using frequencies that baffle modern science.",
-                "visual_prompt": f"Mystical glowing deep sea creature, glowing tendrils, underwater photography"
+                "visual_prompt": f"Mystical glowing deep sea creature, glowing tendrils, underwater cinematography"
             },
             {
                 "title": "Final Mystery",
-                "narration": "The true aliens of this world might already be living right beneath our waves.",
-                "visual_prompt": f"Silhouette of endless ocean abyss with eerie cyan light, {style}"
+                "narration": "The true wonders of this world might already be living right beneath our waves.",
+                "visual_prompt": f"Silhouette of endless ocean abyss with eerie cyan light, {style_name}"
+            }
+        ]
+    elif theme == "history":
+        return [
+            {
+                "title": "The Ancient Secret",
+                "narration": f"Buried in the dust of history lies a riddle: {hook}.",
+                "visual_prompt": f"Ancient stone temple bathed in dramatic golden hour sun, {style_name}"
+            },
+            {
+                "title": "The Lost Engineering",
+                "narration": "Ancient builders achieved astronomical precision without modern tools or blueprints.",
+                "visual_prompt": f"Intricate carvings and megalithic stone architecture, mysterious shadows, {style_name}"
+            },
+            {
+                "title": "The Artifact",
+                "narration": "Archaeologists uncovered relics that defy the official timeline of civilizations.",
+                "visual_prompt": f"Glowing ancient relic discovered beneath temple floor, dramatic illumination"
+            },
+            {
+                "title": "The Question",
+                "narration": "Did lost knowledge vanish forever, or is it waiting to be rediscovered? Subscribe for more.",
+                "visual_prompt": f"Archaeologist looking into endless desert horizon, cinematic 8k film still"
+            }
+        ]
+    elif theme == "tech":
+        return [
+            {
+                "title": "The Tech Frontier",
+                "narration": f"Technology just crossed a threshold nobody thought possible: {hook}.",
+                "visual_prompt": f"Futuristic high-tech lab with holographic interfaces, glowing cyan light, {style_name}"
+            },
+            {
+                "title": "The Machine Mind",
+                "narration": "Autonomous neural networks are beginning to solve equations humans worked on for centuries.",
+                "visual_prompt": f"Complex quantum processor glowing with neon data streams, 8k render"
+            },
+            {
+                "title": "The Real World Shift",
+                "narration": "Within five years, how we work, create, and live will look fundamentally different.",
+                "visual_prompt": f"Futuristic cybernetic city with autonomous aerial vehicles, {style_name}"
+            },
+            {
+                "title": "Are You Ready?",
+                "narration": "Is humanity prepared for what comes next? Drop your thoughts in the comments.",
+                "visual_prompt": f"Silhouette looking out high-rise window at ultra-futuristic skyline, {style_name}"
             }
         ]
     else:
@@ -338,22 +488,22 @@ def generate_script_from_comment(comment: str, style: str = "cinematic", target_
             {
                 "title": "The Hook",
                 "narration": f"Did you know? {hook}.",
-                "visual_prompt": f"Dramatic cinematic scene representing {comment[:50]}, dramatic lighting, 8k, {style}"
+                "visual_prompt": f"Dramatic cinematic scene representing {comment[:50]}, dramatic lighting, 8k, {style_name}"
             },
             {
                 "title": "The Reality",
                 "narration": "Most people assume this is simple, but the deeper reality is far more intriguing.",
-                "visual_prompt": f"Intricate visual details of {comment[:40]}, mysterious atmosphere, {style}"
+                "visual_prompt": f"Intricate visual details of {comment[:40]}, atmospheric perspective, {style_name}"
             },
             {
                 "title": "The Twist",
                 "narration": "When you break down what actually happens, everything you thought gets flipped upside down.",
-                "visual_prompt": f"Epic visual crescendo, radiant colors, breathtaking perspective, {style}"
+                "visual_prompt": f"Epic visual crescendo, radiant colors, breathtaking perspective, {style_name}"
             },
             {
                 "title": "The Outro",
                 "narration": "What do you think about this? Drop your thoughts below and subscribe for more.",
-                "visual_prompt": f"Striking final shot, clean modern aesthetic, evocative lighting, {style}"
+                "visual_prompt": f"Striking final shot, clean modern aesthetic, evocative lighting, {style_name}"
             }
         ]
 
@@ -387,17 +537,18 @@ async def generate_voiceover_async(scenes: list[dict], voice_id: str, output_aud
     return dur
 
 
-def generate_procedural_scene_image(prompt: str, title: str, width: int, height: int, filepath: str, idx: int = 0):
-    """Ultra-fast (0.02s) procedural PIL visual with dynamic gradients & typography."""
+def generate_procedural_scene_image(prompt: str, title: str, width: int, height: int, filepath: str, idx: int = 0, style: str = "liveaction"):
+    """Ultra-fast (0.02s) procedural PIL visual with style-aware colors, badges, gradients & typography."""
     img = Image.new("RGB", (width, height), color=(10, 15, 26))
     draw = ImageDraw.Draw(img)
 
-    palettes = [
-        ((15, 23, 42), (99, 102, 241)),   # Indigo
-        ((10, 15, 30), (13, 148, 136)),   # Cyan/Teal
-        ((24, 10, 35), (236, 72, 153)),   # Magenta
-        ((17, 24, 39), (245, 158, 11)),   # Amber
-    ]
+    style_cfg = STYLE_CONFIGS.get(style, STYLE_CONFIGS.get("liveaction", {}))
+    palettes = style_cfg.get("colors", [
+        ((15, 23, 42), (99, 102, 241)),
+        ((10, 15, 30), (13, 148, 136)),
+        ((24, 10, 35), (236, 72, 153)),
+        ((17, 24, 39), (245, 158, 11)),
+    ])
     c1, c2 = palettes[idx % len(palettes)]
 
     # Draw vertical gradient
@@ -415,25 +566,37 @@ def generate_procedural_scene_image(prompt: str, title: str, width: int, height:
 
     try:
         font_large = ImageFont.truetype("arial.ttf", size=min(width // 18, 38))
+        font_badge = ImageFont.truetype("arial.ttf", size=min(width // 26, 22))
         font_small = ImageFont.truetype("arial.ttf", size=min(width // 28, 20))
     except Exception:
-        font_large = font_small = ImageFont.load_default()
+        font_large = font_badge = font_small = ImageFont.load_default()
 
     # Center card
-    bw, bh = width - 80, 160
-    bx, by = 40, height // 2 - 80
+    bw, bh = width - 80, 180
+    bx, by = 40, height // 2 - 90
     draw.rounded_rectangle([bx, by, bx + bw, by + bh], radius=16, fill=(15, 23, 42, 215), outline=(99, 102, 241), width=2)
-    draw.text((width // 2, by + 50), title.upper(), fill=(255, 255, 255), anchor="mm", font=font_large)
-    preview = (prompt[:40] + "...") if len(prompt) > 40 else prompt
-    draw.text((width // 2, by + 105), preview, fill=(199, 210, 254), anchor="mm", font=font_small)
+
+    # Style badge tag
+    badge_text = style_cfg.get("badge", "🎬 VIDEO").upper()
+    draw.text((width // 2, by + 35), badge_text, fill=(251, 191, 36), anchor="mm", font=font_badge)
+    draw.text((width // 2, by + 80), title.upper(), fill=(255, 255, 255), anchor="mm", font=font_large)
+    preview = (prompt[:45] + "...") if len(prompt) > 45 else prompt
+    draw.text((width // 2, by + 135), preview, fill=(199, 210, 254), anchor="mm", font=font_small)
 
     img.save(filepath, "JPEG", quality=90)
 
 
-def fetch_scene_image_fast(prompt: str, title: str, width: int, height: int, filepath: str, idx: int = 0):
-    """Fetch online AI image with strict 3.5s timeout; instant procedural fallback."""
+def fetch_scene_image_fast(prompt: str, title: str, width: int, height: int, filepath: str, idx: int = 0, style: str = "liveaction"):
+    """Fetch online AI image with style prefix/suffix and strict 3.5s timeout; instant procedural fallback."""
     clean_p = prompt.replace("'", "").replace('"', '').strip()
-    encoded = urllib.parse.quote(f"{clean_p}, vertical 8k cinematic masterpiece")
+    style_cfg = STYLE_CONFIGS.get(style, STYLE_CONFIGS.get("liveaction", {}))
+
+    prefix = style_cfg.get("prompt_prefix", "photorealistic live action film still,")
+    suffix = style_cfg.get("prompt_suffix", ", 8k resolution, award winning cinematography")
+    orientation = "vertical 9:16 portrait orientation" if height > width else "horizontal 16:9 widescreen composition"
+
+    full_prompt = f"{prefix} {clean_p} {suffix}, {orientation}"
+    encoded = urllib.parse.quote(full_prompt[:260])
     url = f"https://image.pollinations.ai/prompt/{encoded}?width={width}&height={height}&nologo=true&seed={random.randint(100, 99999)}"
 
     try:
@@ -442,13 +605,13 @@ def fetch_scene_image_fast(prompt: str, title: str, width: int, height: int, fil
             if resp.status == 200:
                 with open(filepath, "wb") as f:
                     f.write(resp.read())
-                log_safe(f"   [AI-IMG] Online image downloaded for {title}")
+                log_safe(f"   [AI-IMG] Online image downloaded for {title} [{style}]")
                 return
     except Exception:
         pass
 
-    # Instant fallback
-    generate_procedural_scene_image(prompt, title, width, height, filepath, idx)
+    # Instant fallback using matching style palette & badge
+    generate_procedural_scene_image(prompt, title, width, height, filepath, idx, style=style)
 
 
 def build_ass_subtitles(scenes: list[dict], width: int, height: int, style: str = "viral_yellow") -> str:
@@ -532,13 +695,18 @@ def create_ai_short_video(
     try:
         width, height = (1280, 720) if aspect_ratio == "16:9" else (720, 1280)
 
+        # ── 0. Resolve Style (Anime, Live Action, 3D Animation, etc.) ────────
+        resolved_style = detect_style_from_comment(comment, requested_style=style)
+        style_cfg = STYLE_CONFIGS.get(resolved_style, STYLE_CONFIGS.get("liveaction", {}))
+        log_safe(f"[STYLE] Resolved style: {resolved_style} ({style_cfg.get('name', 'Live Action')})")
+
         # ── 1. Script Generation (Instant) ───────────────────────────────────
-        report(10, "Crafting viral script storyboard...")
-        scenes = generate_script_from_comment(comment, style=style, target_duration=target_duration)
+        report(10, f"Crafting {style_cfg.get('name', 'video')} script storyboard...")
+        scenes = generate_script_from_comment(comment, style=resolved_style, target_duration=target_duration)
         log_safe(f"Script ready ({len(scenes)} scenes)")
 
         # ── 2. Concurrent Voiceover & Image Fetching ──────────────────────────
-        report(25, "Synthesizing voiceover & fetching scene visuals concurrently...")
+        report(25, f"Synthesizing voiceover & generating {style_cfg.get('name', 'visual')} scenes...")
         voice_audio_path = os.path.join(temp_dir, "narration.mp3")
 
         # Run TTS and visual generation in parallel thread pool
@@ -556,7 +724,8 @@ def create_ai_short_video(
                     width,
                     height,
                     img_paths[i],
-                    i
+                    i,
+                    resolved_style
                 )
                 for i in range(len(scenes))
             ]
@@ -662,6 +831,10 @@ def create_ai_short_video(
             "filename": final_filename,
             "download_url": f"/download/{final_filename}",
             "comment": comment,
+            "style": resolved_style,
+            "style_name": style_cfg.get("name", "Live Action"),
+            "style_badge": style_cfg.get("badge", "🎬 Live Action"),
+            "video_format": "Short (9:16)" if aspect_ratio == "9:16" else "Video (16:9)",
             "duration": round(total_duration, 1),
             "duration_formatted": f"0:{int(total_duration):02d}",
             "file_size_mb": file_size_mb,

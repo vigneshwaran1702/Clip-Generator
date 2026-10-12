@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <meta name="description" content="AI Video Generator — Create viral Shorts and Reels directly from comments, prompts, or video uploads."/>
-  <title>AI Clip Generator & Video Creator</title>
+  <meta name="description" content="AI Shorts & Video Generator — Create viral Shorts and full Videos directly from user comments in Live Action, Anime, 3D Animation, Cinematic, and all video styles."/>
+  <title>🎬 AI Shorts & Video Generator | From User Comments</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
@@ -279,6 +279,45 @@
       border-color: var(--accent);
       color: white;
       transform: translateY(-1px);
+    }
+
+    .pill-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 6px;
+      margin-bottom: 12px;
+    }
+
+    .pill-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 7px 14px;
+      border-radius: 9px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      user-select: none;
+    }
+
+    .pill-btn:hover {
+      border-color: var(--accent);
+      background: rgba(99, 102, 241, 0.12);
+      color: white;
+      transform: translateY(-1px);
+    }
+
+    .pill-btn.active {
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      border-color: transparent;
+      color: white;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+      font-weight: 600;
     }
 
     .options-grid {
@@ -728,16 +767,16 @@
 
 <header>
   <a href="#" class="brand">
-    <div class="brand-logo">✨</div>
-    <div class="brand-title">AI Clip Generator</div>
+    <div class="brand-logo">🎬</div>
+    <div class="brand-title">AI Shorts & Video Generator</div>
   </a>
 
   <div class="header-nav">
     <button class="nav-tab active" id="tab-ai-btn" onclick="switchTab('ai')">
-      🎬 AI Comment to Video
+      🎬 AI Shorts & Video Creator
     </button>
     <button class="nav-tab" id="tab-split-btn" onclick="switchTab('split')">
-      ✂️ Video Clipper
+      ✂️ Long Video Clipper
     </button>
   </div>
 
@@ -750,13 +789,13 @@
 <div class="container">
 
   <!-- ==================================================================== -->
-  <!-- TAB 1: AI VIDEO GENERATION FROM COMMENT                              -->
+  <!-- TAB 1: AI SHORTS & VIDEO GENERATION FROM USER COMMENTS               -->
   <!-- ==================================================================== -->
   <div id="tab-ai" class="tab-content active">
 
     <div class="hero-banner">
-      <h2>Generate AI Short Video from Comment</h2>
-      <p>Type any comment, question, or viral topic. AI writes the script, speaks in realistic neural voice, generates visual scenes, and adds viral captions!</p>
+      <h2>🎬 Create Shorts & Videos from User Comments</h2>
+      <p>Transform any user comment or prompt into viral vertical Shorts or widescreen Videos. Supports <strong>Live Action</strong>, <strong>Anime</strong>, <strong>3D Animation</strong>, <strong>Cinematic 8K</strong>, <strong>Cyberpunk</strong>, <strong>Documentary</strong>, and all video types!</p>
     </div>
 
     <!-- AI Generator Card -->
@@ -764,72 +803,148 @@
       <div class="card-header">
         <div class="card-title">
           <div class="step-badge">1</div>
-          <span>Enter Comment or Video Idea</span>
+          <span>Enter User Comment or Video Topic</span>
         </div>
       </div>
 
       <textarea 
         id="ai-comment" 
         class="prompt-box" 
-        placeholder="e.g. Why do cats purr? The hidden healing frequency science discovered..."
+        placeholder="Enter any user comment or prompt... e.g. 'What actually happens if gravity disappears for 10 seconds?' or 'Make an anime short of a wandering samurai in futuristic Tokyo' or 'A live action thriller about a secret underground city'..."
       ></textarea>
 
-      <!-- Preset Idea Chips -->
+      <!-- Preset Idea Chips (Viral Curiosities & Real Comments - No anime presets) -->
+      <div style="font-size:0.78rem; font-weight:600; color:var(--muted); text-transform:uppercase; margin-top:10px; margin-bottom:6px;">
+        💡 Viral Comment Ideas & Hooks:
+      </div>
       <div class="preset-chips" id="preset-chips">
-        <div class="preset-chip" onclick="fillPreset('Why do cats purr? The hidden healing frequency science discovered.')">
-          🐱 Why Cats Purr
-        </div>
-        <div class="preset-chip" onclick="fillPreset('What happens to your body when crossing the event horizon of a black hole?')">
+        <div class="preset-chip" onclick="fillPreset('What actually happens to your body when crossing the event horizon of a black hole?')">
           🌌 Black Hole Horizon
         </div>
-        <div class="preset-chip" onclick="fillPreset('How the 2-minute rule rewires your brain to eliminate procrastination.')">
-          ⚡ 2-Minute Rule
+        <div class="preset-chip" onclick="fillPreset('Archaeologists discover an underground metropolis built 3,000 feet beneath the desert.')">
+          🎬 Lost Subterranean City
+        </div>
+        <div class="preset-chip" onclick="fillPreset('How the 2-minute rule rewires dopamine receptors in your brain to eliminate procrastination.')">
+          🧠 2-Minute Habit Rule
+        </div>
+        <div class="preset-chip" onclick="fillPreset('Why do cats purr? The hidden healing frequency science discovered.')">
+          🐱 Why Cats Purr
         </div>
         <div class="preset-chip" onclick="fillPreset('Terrifying anomalies found 36,000 feet deep in the Mariana Trench.')">
           🌊 Mariana Trench
         </div>
-        <div class="preset-chip" onclick="fillPreset('What would happen to Earth within 24 hours if the Moon disappeared?')">
-          🌑 If the Moon Vanished
+        <div class="preset-chip" onclick="fillPreset('The immortal jellyfish species capable of reverting its cells back to infancy and living forever.')">
+          🌿 Immortal Jellyfish
         </div>
       </div>
 
       <div class="card-header" style="margin-top: 10px; margin-bottom: 14px;">
         <div class="card-title">
           <div class="step-badge">2</div>
-          <span>Customization & Style</span>
+          <span>Video Format & Visual Style</span>
+        </div>
+      </div>
+
+      <!-- Quick Format Selector -->
+      <div style="margin-bottom: 16px;">
+        <label style="font-size:0.8rem; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px;">Video Format</label>
+        <div class="pill-group" id="format-pills">
+          <button type="button" class="pill-btn active" data-format="9:16" onclick="selectFormat('9:16')">
+            📱 Vertical Short / Reel (9:16)
+          </button>
+          <button type="button" class="pill-btn" data-format="16:9" onclick="selectFormat('16:9')">
+            📺 Standard Video / YouTube (16:9)
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Duration Selector -->
+      <div style="margin-bottom: 16px;">
+        <label style="font-size:0.8rem; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px;">Target Duration</label>
+        <div class="pill-group" id="duration-pills">
+          <button type="button" class="pill-btn" data-dur="15" onclick="selectDuration(15)">
+            ⚡ 15s Quick Short
+          </button>
+          <button type="button" class="pill-btn active" data-dur="30" onclick="selectDuration(30)">
+            🔥 30s Viral Short
+          </button>
+          <button type="button" class="pill-btn" data-dur="60" onclick="selectDuration(60)">
+            ⏱️ 60s Extended
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Style Selector (Supports Live Action, Anime, 3D Animation, Cyberpunk, Documentary, etc.) -->
+      <div style="margin-bottom: 18px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+          <label style="font-size:0.8rem; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px;">Visual Style (All Types Supported)</label>
+          <span style="font-size:0.78rem; font-weight:600; color:#818cf8;" id="active-style-label">🎬 Live Action</span>
+        </div>
+        <div class="pill-group" id="style-pills">
+          <button type="button" class="pill-btn" data-style="auto" onclick="selectStyle('auto')">
+            ✨ Auto-Detect
+          </button>
+          <button type="button" class="pill-btn active" data-style="liveaction" onclick="selectStyle('liveaction')">
+            🎬 Live Action
+          </button>
+          <button type="button" class="pill-btn" data-style="anime" onclick="selectStyle('anime')">
+            🌸 Anime / Manga
+          </button>
+          <button type="button" class="pill-btn" data-style="3d_animation" onclick="selectStyle('3d_animation')">
+            🧸 3D Animation
+          </button>
+          <button type="button" class="pill-btn" data-style="cinematic" onclick="selectStyle('cinematic')">
+            🎥 Cinematic 8K
+          </button>
+          <button type="button" class="pill-btn" data-style="cyberpunk" onclick="selectStyle('cyberpunk')">
+            ⚡ Cyberpunk
+          </button>
+          <button type="button" class="pill-btn" data-style="documentary" onclick="selectStyle('documentary')">
+            🌿 Documentary
+          </button>
+          <button type="button" class="pill-btn" data-style="fantasy" onclick="selectStyle('fantasy')">
+            🏰 Dark Fantasy
+          </button>
+          <button type="button" class="pill-btn" data-style="comic" onclick="selectStyle('comic')">
+            📚 Comic Book
+          </button>
         </div>
       </div>
 
       <!-- Settings Grid -->
       <div class="options-grid">
         <div class="form-group">
+          <label for="ai-style">Style Override</label>
+          <select id="ai-style" class="select-input" onchange="onStyleDropdownChange(this.value)">
+            <option value="auto">✨ Auto-Detect from Comment</option>
+            <option value="liveaction" selected>🎬 Live Action / Cinematic Realism</option>
+            <option value="anime">🌸 Anime / Japanese Manga</option>
+            <option value="3d_animation">🧸 3D Animation / Pixar Style</option>
+            <option value="cinematic">🎥 Cinematic 8K Hollywood</option>
+            <option value="cyberpunk">⚡ Cyberpunk / Sci-Fi Neon</option>
+            <option value="documentary">🌿 Nature & Documentary</option>
+            <option value="fantasy">🏰 Dark Fantasy & Mythical</option>
+            <option value="comic">📚 Comic Book & Graphic Novel</option>
+          </select>
+        </div>
+
+        <div class="form-group">
           <label for="ai-voice">AI Voiceover</label>
           <select id="ai-voice" class="select-input">
-            <option value="en-US-ChristopherNeural" selected>Christopher (Deep Cinematic)</option>
+            <option value="en-US-ChristopherNeural" selected>Christopher (Deep Cinematic Male)</option>
             <option value="en-US-JennyNeural">Jenny (Natural Clear Female)</option>
             <option value="en-US-GuyNeural">Guy (Modern Energetic Male)</option>
-            <option value="en-US-AriaNeural">Aria (Expressive Storyteller)</option>
-            <option value="en-GB-RyanNeural">Ryan (British Documentary)</option>
+            <option value="en-US-AriaNeural">Aria (Expressive Storyteller Female)</option>
+            <option value="en-GB-RyanNeural">Ryan (British Documentary Male)</option>
             <option value="en-GB-SoniaNeural">Sonia (British Refined Female)</option>
           </select>
         </div>
 
         <div class="form-group">
-          <label for="ai-style">Visual Style</label>
-          <select id="ai-style" class="select-input">
-            <option value="cinematic" selected>Cinematic 8K</option>
-            <option value="photorealistic">Photorealistic</option>
-            <option value="cyberpunk">Cyberpunk / Sci-Fi</option>
-            <option value="space">Deep Space</option>
-            <option value="anime">Anime / Fantasy</option>
-          </select>
-        </div>
-
-        <div class="form-group">
           <label for="ai-aspect">Aspect Ratio</label>
-          <select id="ai-aspect" class="select-input">
+          <select id="ai-aspect" class="select-input" onchange="onAspectDropdownChange(this.value)">
             <option value="9:16" selected>Vertical 9:16 (Shorts / Reels)</option>
-            <option value="16:9">Horizontal 16:9 (YouTube)</option>
+            <option value="16:9">Horizontal 16:9 (YouTube Video)</option>
           </select>
         </div>
 
@@ -857,7 +972,7 @@
 
       <div style="display:flex; gap:12px; align-items:center;">
         <button class="btn btn-primary" id="generate-ai-btn" onclick="generateAIVideo()">
-          🚀 Generate AI Video Short
+          🚀 Generate AI Video / Short
         </button>
         <button class="btn btn-secondary" onclick="loadSavedShorts()">
           📁 Refresh Library
@@ -907,6 +1022,7 @@
             <div class="info-pill">Size: <strong id="res-size">0 MB</strong></div>
             <div class="info-pill">Resolution: <strong id="res-res">720x1280</strong></div>
             <div class="info-pill">Format: <strong id="res-format">Vertical 9:16</strong></div>
+            <div class="info-pill">Style: <strong id="res-style">Live Action</strong></div>
           </div>
 
           <div class="scenes-breakdown">
@@ -1077,12 +1193,82 @@
     box.scrollTop = box.scrollHeight;
   }
 
+  // ── Video Format, Duration & Style State ──────────────────────────────
+  let selectedFormat = "9:16";
+  let selectedDuration = 30;
+  let selectedStyle = "liveaction";
+
+  const STYLE_NAMES = {
+    "auto": "✨ Auto-Detect from Comment",
+    "liveaction": "🎬 Live Action / Cinematic Realism",
+    "anime": "🌸 Anime / Japanese Manga",
+    "3d_animation": "🧸 3D Animation / Pixar Style",
+    "cinematic": "🎥 Cinematic 8K Hollywood",
+    "cyberpunk": "⚡ Cyberpunk / Sci-Fi Neon",
+    "documentary": "🌿 Nature & Documentary",
+    "fantasy": "🏰 Dark Fantasy & Mythical",
+    "comic": "📚 Comic Book & Graphic Novel"
+  };
+
+  function selectFormat(fmt) {
+    selectedFormat = fmt;
+    document.querySelectorAll("#format-pills .pill-btn").forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.format === fmt);
+    });
+    const el = document.getElementById("ai-aspect");
+    if (el) el.value = fmt;
+    log(`Selected format: ${fmt === '9:16' ? 'Vertical Short (9:16)' : 'Standard Video (16:9)'}`, "info");
+  }
+
+  function onAspectDropdownChange(fmt) {
+    selectFormat(fmt);
+  }
+
+  function selectDuration(dur) {
+    selectedDuration = parseInt(dur, 10);
+    document.querySelectorAll("#duration-pills .pill-btn").forEach(btn => {
+      btn.classList.toggle("active", parseInt(btn.dataset.dur, 10) === selectedDuration);
+    });
+    log(`Target duration set to ${dur}s`, "info");
+  }
+
+  function selectStyle(stl) {
+    selectedStyle = stl;
+    document.querySelectorAll("#style-pills .pill-btn").forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.style === stl);
+    });
+    const sel = document.getElementById("ai-style");
+    if (sel) sel.value = stl;
+    const lbl = document.getElementById("active-style-label");
+    if (lbl) lbl.textContent = STYLE_NAMES[stl] || stl;
+
+    // Recommend fitting voice
+    const voiceSel = document.getElementById("ai-voice");
+    if (voiceSel) {
+      if (stl === "anime" || stl === "fantasy") {
+        voiceSel.value = "en-US-AriaNeural";
+      } else if (stl === "documentary") {
+        voiceSel.value = "en-GB-RyanNeural";
+      } else if (stl === "3d_animation" || stl === "cyberpunk") {
+        voiceSel.value = "en-US-GuyNeural";
+      } else if (stl === "liveaction" || stl === "cinematic") {
+        voiceSel.value = "en-US-ChristopherNeural";
+      }
+    }
+
+    log(`Selected visual style: ${STYLE_NAMES[stl] || stl}`, "info");
+  }
+
+  function onStyleDropdownChange(stl) {
+    selectStyle(stl);
+  }
+
   // ── Preset Prompt Fill ────────────────────────────────────────────────
   function fillPreset(text) {
     const el = document.getElementById("ai-comment");
     el.value = text;
     el.focus();
-    log(`Applied prompt preset: "${text.substring(0, 35)}..."`, "info");
+    log(`Applied prompt idea: "${text.substring(0, 35)}..."`, "info");
   }
 
   // ── AI Video Generation ───────────────────────────────────────────────
@@ -1095,8 +1281,8 @@
     }
 
     const voice = document.getElementById("ai-voice").value;
-    const style = document.getElementById("ai-style").value;
-    const aspect = document.getElementById("ai-aspect").value;
+    const style = selectedStyle || document.getElementById("ai-style").value;
+    const aspect = selectedFormat || document.getElementById("ai-aspect").value;
     const subs = document.getElementById("ai-subtitles").value;
     const bgMusic = document.getElementById("ai-bg-music").checked;
 
@@ -1130,7 +1316,7 @@
       } catch (e) {}
     }, 1200);
 
-    log(`Generating AI Video from comment: "${comment.substring(0, 45)}..."`, "info");
+    log(`Generating AI Video from comment: "${comment.substring(0, 45)}..." [${style}, ${aspect}]`, "info");
 
     try {
       const res = await fetch(`${API}/api/generate-ai-video`, {
@@ -1143,7 +1329,7 @@
           style: style,
           subtitle_style: subs,
           use_bg_music: bgMusic,
-          target_duration: 30,
+          target_duration: selectedDuration,
           task_id: taskId
         })
       });
@@ -1158,7 +1344,7 @@
       const result = await res.json();
       updateProgressUI(100, "Complete!");
       setStage(5);
-      log(`✅ AI Video ready: ${result.filename} (${result.duration_formatted})`, "success");
+      log(`✅ AI Video ready: ${result.filename} (${result.duration_formatted}) [${result.style_badge || result.style}]`, "success");
 
       // Display Video Result Showcase
       showVideoResult(result);
@@ -1209,7 +1395,8 @@
     document.getElementById("res-duration").textContent = data.duration_formatted || `${data.duration}s`;
     document.getElementById("res-size").textContent = `${data.file_size_mb} MB`;
     document.getElementById("res-res").textContent = data.resolution;
-    document.getElementById("res-format").textContent = data.aspect_ratio === "16:9" ? "Horizontal 16:9" : "Vertical 9:16";
+    document.getElementById("res-format").textContent = data.video_format || (data.aspect_ratio === "16:9" ? "Horizontal 16:9" : "Vertical 9:16");
+    document.getElementById("res-style").textContent = data.style_badge || data.style_name || data.style || "Live Action";
 
     // Scenes breakdown
     const scenesList = document.getElementById("scenes-list");
@@ -1332,8 +1519,20 @@
   async function loadSavedShorts() {
     const gallery = document.getElementById("shorts-gallery");
     try {
-      const res = await fetch(`${API}/list-shorts`);
-      const data = await res.json();
+      const [resFiles, resMeta] = await Promise.all([
+        fetch(`${API}/list-shorts`),
+        fetch(`${API}/api/ai-shorts`).catch(() => ({ ok: false }))
+      ]);
+      const data = await resFiles.json();
+      let aiMap = {};
+      if (resMeta.ok) {
+        try {
+          const metaData = await resMeta.json();
+          if (metaData.ai_shorts) {
+            metaData.ai_shorts.forEach(m => { aiMap[m.filename] = m; });
+          }
+        } catch(e) {}
+      }
 
       if (!data.shorts || data.shorts.length === 0) {
         gallery.innerHTML = `<p style="color:var(--muted); font-size:0.9rem; grid-column:1/-1;">No videos generated yet. Create one above!</p>`;
@@ -1343,15 +1542,17 @@
       gallery.innerHTML = "";
       data.shorts.forEach(s => {
         const isAI = s.filename.startsWith("ai_short_");
+        const meta = aiMap[s.filename] || {};
+        const badgeLabel = isAI ? (meta.style_badge ? `${meta.style_badge} ${meta.video_format || 'SHORT'}` : '✨ AI SHORT / VIDEO') : '✂️ CLIPPED SHORT';
         const card = document.createElement("div");
         card.className = "short-card";
         card.innerHTML = `
           <div>
             <div style="font-size:0.75rem; color:${isAI ? 'var(--accent)' : 'var(--cyan)'}; font-weight:700; margin-bottom:4px;">
-              ${isAI ? '✨ AI GENERATED SHORT' : '✂️ CLIPPED SHORT'}
+              ${badgeLabel}
             </div>
-            <div class="short-card-name">${s.filename}</div>
-            <div class="short-card-meta">${s.file_size_mb ? s.file_size_mb + ' MB' : ''}</div>
+            <div class="short-card-name" title="${meta.comment || s.filename}">${meta.comment ? `"${meta.comment.substring(0, 38)}..."` : s.filename}</div>
+            <div class="short-card-meta">${s.file_size_mb ? s.file_size_mb + ' MB' : ''} ${meta.duration_formatted ? '• ' + meta.duration_formatted : ''}</div>
           </div>
           <div style="display:flex; gap:8px; margin-top:10px;">
             <a class="btn btn-primary" style="flex:1; padding:8px 12px; font-size:0.82rem;" href="${API}${s.download_url}" target="_blank">

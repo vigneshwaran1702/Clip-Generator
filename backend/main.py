@@ -47,9 +47,9 @@ os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
 # Import AI Video Generation Engine
 try:
-    from ai_video_engine import create_ai_short_video, AVAILABLE_VOICES, POPULAR_PRESETS
+    from ai_video_engine import create_ai_short_video, AVAILABLE_VOICES, POPULAR_PRESETS, STYLE_CONFIGS
 except ImportError:
-    from .ai_video_engine import create_ai_short_video, AVAILABLE_VOICES, POPULAR_PRESETS
+    from .ai_video_engine import create_ai_short_video, AVAILABLE_VOICES, POPULAR_PRESETS, STYLE_CONFIGS
 
 # Absolute path to ffmpeg
 FFMPEG_PATH = r"C:\Users\hp\AppData\Local\Microsoft\WinGet\Packages\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\ffmpeg-8.1.1-full_build\bin\ffmpeg.exe"
@@ -477,6 +477,22 @@ def get_voices():
 def get_presets():
     """List sample comments and prompt presets for viral video creation."""
     return {"presets": POPULAR_PRESETS}
+
+
+@app.get("/api/styles")
+def get_styles():
+    """List available video styles: Anime, Live Action, 3D Animation, Cyberpunk, Documentary, etc."""
+    return {
+        "styles": [
+            {
+                "id": k,
+                "name": v["name"],
+                "badge": v["badge"],
+                "default_voice": v.get("default_voice", "en-US-ChristopherNeural")
+            }
+            for k, v in STYLE_CONFIGS.items()
+        ]
+    }
 
 
 @app.post("/api/generate-ai-video")
