@@ -755,11 +755,48 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
+    /* ── Image to Video Styles ── */
+    .image-preview-box {
+      display: none;
+      align-items: center;
+      gap: 16px;
+      margin-top: 14px;
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+    }
+    .image-preview-box.active {
+      display: flex;
+    }
+    .image-preview-thumb {
+      max-width: 140px;
+      max-height: 140px;
+      border-radius: 8px;
+      object-fit: cover;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--border);
+    }
+    .engine-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      background: rgba(99, 102, 241, 0.08);
+      border: 1px solid rgba(99, 102, 241, 0.25);
+      border-radius: 12px;
+      padding: 12px 18px;
+      font-size: 0.85rem;
+      margin-bottom: 8px;
+    }
+
     @media (max-width: 768px) {
       header { padding: 14px 20px; }
       .header-nav { display: none; }
       .video-showcase { flex-direction: column; }
       .video-player-wrap { max-width: 100%; }
+      .engine-bar { flex-direction: column; align-items: flex-start; }
     }
   </style>
 </head>
@@ -773,10 +810,13 @@
 
   <div class="header-nav">
     <button class="nav-tab active" id="tab-ai-btn" onclick="switchTab('ai')">
-      🎬 AI Shorts & Video Creator
+      📝 Prompt to Video
+    </button>
+    <button class="nav-tab" id="tab-i2v-btn" onclick="switchTab('i2v')">
+      🖼️ Image to Video (Give Image)
     </button>
     <button class="nav-tab" id="tab-split-btn" onclick="switchTab('split')">
-      ✂️ Long Video Clipper
+      ✂️ Video Clipper
     </button>
   </div>
 
@@ -787,6 +827,28 @@
 </header>
 
 <div class="container">
+
+  <!-- AI Engine & Cloud API Configuration Bar -->
+  <div class="engine-bar" id="engine-bar">
+    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+      <span style="font-weight:700; color:#c7d2fe; display:flex; align-items:center; gap:6px;">
+        ⚙️ AI Video Engine:
+      </span>
+      <select id="global-video-model" class="select-input" style="padding:6px 12px; font-size:0.82rem;" onchange="saveEngineSettings()">
+        <option value="cinematic_motion" selected>🎬 Cinematic Camera Dynamics (Instant, 60fps & Free)</option>
+        <option value="alibaba/wan-2.2-fast">⚡ Alibaba Wan 2.2 Fast (Cloud AI Video)</option>
+        <option value="bytedance/seedance-1-pro-fast">🎥 ByteDance Seedance 1.0 Pro</option>
+        <option value="google/veo-3.1-fast">🌟 Google Veo 3.1 Fast</option>
+        <option value="prunaai/p-video">🎯 Pruna p-video</option>
+        <option value="alibaba/wan-2.6">🔊 Alibaba Wan 2.6 (Audio Sync)</option>
+      </select>
+    </div>
+    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+      <span style="font-size:0.8rem; color:var(--muted);">Pollinations API Key:</span>
+      <input type="password" id="global-api-key" class="text-input" style="padding:6px 10px; font-size:0.82rem; width:160px;" placeholder="Optional Key..." onchange="saveEngineSettings()"/>
+      <a href="https://enter.pollinations.ai" target="_blank" style="color:#818cf8; font-size:0.75rem; text-decoration:underline;">Get Key</a>
+    </div>
+  </div>
 
   <!-- ==================================================================== -->
   <!-- TAB 1: AI SHORTS & VIDEO GENERATION FROM USER COMMENTS               -->
@@ -1036,7 +1098,258 @@
   </div>
 
   <!-- ==================================================================== -->
-  <!-- TAB 2: VIDEO CLIPPER (UPLOAD & SPLIT)                                 -->
+  <!-- TAB 2: IMAGE TO AI VIDEO (ANIMATE STATIC IMAGES)                     -->
+  <!-- ==================================================================== -->
+  <div id="tab-i2v" class="tab-content">
+
+    <div class="hero-banner">
+      <h2>🖼️ Animate Static Images into AI Video</h2>
+      <p>Give any photo, character, artwork, or scene and transform it into an AI motion video with cinematic camera dynamics (Dolly Zoom, Panoramic Pans, Action Tilts, Orbits) and voiceover.</p>
+    </div>
+
+    <!-- Image to Video Card -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">
+          <div class="step-badge">1</div>
+          <span>Upload Image / Photo to Animate</span>
+        </div>
+      </div>
+
+      <div class="drop-zone" id="i2v-drop-zone">
+        <input type="file" id="i2v-file-input" accept="image/*"/>
+        <div class="drop-icon">🖼️</div>
+        <p>Drag & drop your picture here, or <span style="color:var(--accent); font-weight:600;">browse images</span></p>
+        <p style="font-size:0.75rem; color:var(--muted); margin-top:4px;">Supports JPG, PNG, WEBP, anime art, portraits, landscapes</p>
+      </div>
+
+      <div class="image-preview-box" id="i2v-preview-box">
+        <img id="i2v-preview-img" class="image-preview-thumb" src="" alt="Selected Preview"/>
+        <div style="flex:1;">
+          <div id="i2v-filename" style="font-weight:600; font-size:0.9rem; color:var(--text); margin-bottom:4px;"></div>
+          <div id="i2v-filesize" style="font-size:0.8rem; color:var(--muted); margin-bottom:8px;"></div>
+          <button class="btn btn-secondary" style="padding:4px 10px; font-size:0.75rem;" onclick="clearI2VImage()">
+            ✕ Remove Image
+          </button>
+        </div>
+      </div>
+
+      <div class="card-header" style="margin-top: 22px; margin-bottom: 12px;">
+        <div class="card-title">
+          <div class="step-badge">2</div>
+          <span>Motion Direction & Animation Prompt</span>
+        </div>
+      </div>
+
+      <textarea 
+        id="i2v-motion-prompt" 
+        class="prompt-box" 
+        placeholder="Describe how the image should move or animate... e.g. 'Dramatic slow zoom into eyes with glowing magical aura', 'Cinematic camera pan across majestic landscape', 'Wind blowing through hair with ethereal lighting'..."
+      ></textarea>
+
+      <!-- Preset Motion Chips -->
+      <div style="font-size:0.78rem; font-weight:600; color:var(--muted); text-transform:uppercase; margin-top:10px; margin-bottom:6px;">
+        💡 Quick Motion Presets:
+      </div>
+      <div class="preset-chips" id="i2v-preset-chips">
+        <div class="preset-chip" onclick="fillI2VPreset('Dramatic slow zoom into subject with warm cinematic lighting and depth', 'zoom_in')">
+          🎬 Cinematic Dolly Push
+        </div>
+        <div class="preset-chip" onclick="fillI2VPreset('Slow expansive zoom out revealing vast surroundings and atmosphere', 'zoom_out')">
+          🔍 Wide Angle Reveal
+        </div>
+        <div class="preset-chip" onclick="fillI2VPreset('Smooth panoramic camera tracking from left to right with cinematic motion blur', 'pan_right')">
+          ➡️ Panoramic Tracking
+        </div>
+        <div class="preset-chip" onclick="fillI2VPreset('Low angle tilt rising upward towards the sky with heroic perspective', 'tilt_up')">
+          ⬆️ Dramatic Tilt Up
+        </div>
+        <div class="preset-chip" onclick="fillI2VPreset('Gentle floating orbit with glowing ambient particles and atmospheric drift', 'orbit')">
+          💫 Floating Orbit & Drift
+        </div>
+        <div class="preset-chip" onclick="fillI2VPreset('Descending tilt from above overlooking the scene with moody shadows', 'tilt_down')">
+          ⬇️ Action Tilt Down
+        </div>
+      </div>
+
+      <div class="card-header" style="margin-top: 14px; margin-bottom: 12px;">
+        <div class="card-title">
+          <div class="step-badge">3</div>
+          <span>Camera Dynamics & Video Settings</span>
+        </div>
+      </div>
+
+      <!-- Camera Motion Selector -->
+      <div style="margin-bottom: 16px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+          <label style="font-size:0.8rem; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px;">Camera Movement Dynamics</label>
+          <span style="font-size:0.78rem; font-weight:600; color:#818cf8;" id="active-i2v-motion-label">🎬 Cinematic Zoom In</span>
+        </div>
+        <div class="pill-group" id="i2v-motion-pills">
+          <button type="button" class="pill-btn active" data-motion="zoom_in" onclick="selectI2VMotion('zoom_in')">
+            🎬 Zoom In (Push)
+          </button>
+          <button type="button" class="pill-btn" data-motion="zoom_out" onclick="selectI2VMotion('zoom_out')">
+            🔍 Zoom Out (Reveal)
+          </button>
+          <button type="button" class="pill-btn" data-motion="pan_right" onclick="selectI2VMotion('pan_right')">
+            ➡️ Pan Right
+          </button>
+          <button type="button" class="pill-btn" data-motion="pan_left" onclick="selectI2VMotion('pan_left')">
+            ⬅️ Pan Left
+          </button>
+          <button type="button" class="pill-btn" data-motion="tilt_up" onclick="selectI2VMotion('tilt_up')">
+            ⬆️ Tilt Up
+          </button>
+          <button type="button" class="pill-btn" data-motion="tilt_down" onclick="selectI2VMotion('tilt_down')">
+            ⬇️ Tilt Down
+          </button>
+          <button type="button" class="pill-btn" data-motion="orbit" onclick="selectI2VMotion('orbit')">
+            💫 Orbit
+          </button>
+          <button type="button" class="pill-btn" data-motion="auto" onclick="selectI2VMotion('auto')">
+            ✨ Auto Motion
+          </button>
+        </div>
+      </div>
+
+      <!-- Duration & Format -->
+      <div style="display:flex; gap:20px; flex-wrap:wrap; margin-bottom:16px;">
+        <div>
+          <label style="font-size:0.8rem; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px;">Duration</label>
+          <div class="pill-group" id="i2v-duration-pills">
+            <button type="button" class="pill-btn" data-dur="5" onclick="selectI2VDuration(5)">5s</button>
+            <button type="button" class="pill-btn active" data-dur="10" onclick="selectI2VDuration(10)">10s</button>
+            <button type="button" class="pill-btn" data-dur="15" onclick="selectI2VDuration(15)">15s</button>
+            <button type="button" class="pill-btn" data-dur="30" onclick="selectI2VDuration(30)">30s</button>
+          </div>
+        </div>
+
+        <div>
+          <label style="font-size:0.8rem; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px;">Format</label>
+          <div class="pill-group" id="i2v-format-pills">
+            <button type="button" class="pill-btn active" data-fmt="9:16" onclick="selectI2VFormat('9:16')">📱 Vertical 9:16</button>
+            <button type="button" class="pill-btn" data-fmt="16:9" onclick="selectI2VFormat('16:9')">📺 Widescreen 16:9</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Settings Grid for Audio & Voiceover -->
+      <div class="options-grid">
+        <div class="form-group">
+          <label for="i2v-voice">AI Voiceover (Optional)</label>
+          <select id="i2v-voice" class="select-input">
+            <option value="none">None (Music Only)</option>
+            <option value="en-US-ChristopherNeural" selected>Christopher (Cinematic Male)</option>
+            <option value="en-US-JennyNeural">Jenny (Natural Clear Female)</option>
+            <option value="en-US-GuyNeural">Guy (Modern Energetic Male)</option>
+            <option value="en-US-AriaNeural">Aria (Expressive Storyteller Female)</option>
+            <option value="en-GB-RyanNeural">Ryan (British Documentary Male)</option>
+            <option value="en-GB-SoniaNeural">Sonia (British Refined Female)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="i2v-narration">Custom Narration Script</label>
+          <input type="text" id="i2v-narration" class="text-input" placeholder="Leave blank to auto-generate from prompt..."/>
+        </div>
+
+        <div class="form-group">
+          <label for="i2v-subtitles">Captions Style</label>
+          <select id="i2v-subtitles" class="select-input">
+            <option value="viral_yellow" selected>Viral Bold Yellow</option>
+            <option value="neon_cyan">Electric Cyan</option>
+            <option value="clean_white">Classic White</option>
+            <option value="none">No Subtitles</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Ambient Soundtrack</label>
+          <div class="toggle-row">
+            <label class="switch">
+              <input type="checkbox" id="i2v-bg-music" checked>
+              <span class="slider"></span>
+            </label>
+            <span style="font-size:0.85rem; color:var(--text);">Ambient Synth Pad</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex; gap:12px; align-items:center;">
+        <button class="btn btn-primary" id="generate-i2v-btn" onclick="generateImageToVideo()">
+          🚀 Animate Image into AI Video
+        </button>
+        <button class="btn btn-secondary" onclick="loadSavedShorts()">
+          📁 Refresh Library
+        </button>
+      </div>
+
+      <!-- Real-time Progress Box for I2V -->
+      <div class="progress-box" id="i2v-progress-box">
+        <div class="progress-header">
+          <span class="progress-status" id="i2v-progress-status">Analyzing image & initializing motion...</span>
+          <span class="progress-pct" id="i2v-progress-pct">0%</span>
+        </div>
+        <div class="progress-bar-wrap">
+          <div class="progress-bar-fill" id="i2v-progress-bar"></div>
+        </div>
+        <div class="stage-steps">
+          <div class="stage-step" id="i2v-step-img">🖼️ Image</div>
+          <div class="stage-step" id="i2v-step-motion">🎬 Motion</div>
+          <div class="stage-step" id="i2v-step-audio">🎙️ Voice & Audio</div>
+          <div class="stage-step" id="i2v-step-subs">🔤 Captions</div>
+          <div class="stage-step" id="i2v-step-done">✨ Final Video</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Generated Image Video Showcase -->
+    <div class="card result-section" id="i2v-result-card">
+      <div class="card-header">
+        <div class="card-title">
+          <span style="color:var(--green)">🎉</span>
+          <span>Your Animated AI Video is Ready!</span>
+        </div>
+        <a class="btn btn-primary" id="i2v-download-btn" download target="_blank">
+          ⬇️ Download MP4
+        </a>
+      </div>
+
+      <div class="video-showcase">
+        <div class="video-player-wrap" id="i2v-player-wrap">
+          <video id="i2v-video-player" controls playsinline></video>
+        </div>
+
+        <div class="video-meta-wrap">
+          <div class="video-info-badge">
+            <div class="info-pill">Duration: <strong id="i2v-res-duration">0:00</strong></div>
+            <div class="info-pill">Size: <strong id="i2v-res-size">0 MB</strong></div>
+            <div class="info-pill">Resolution: <strong id="i2v-res-res">720x1280</strong></div>
+            <div class="info-pill">Motion: <strong id="i2v-res-motion">Zoom In</strong></div>
+            <div class="info-pill">Type: <strong id="i2v-res-type">Image-to-Video</strong></div>
+          </div>
+
+          <div class="scenes-breakdown">
+            <h4>🎬 Animation Details</h4>
+            <div class="scene-item">
+              <div class="scene-item-title" id="i2v-res-prompt-title">Motion Direction</div>
+              <div class="scene-item-text" id="i2v-res-prompt-text"></div>
+            </div>
+            <div class="scene-item" id="i2v-res-narration-box" style="display:none;">
+              <div class="scene-item-title">Narration Script</div>
+              <div class="scene-item-text" id="i2v-res-narration-text"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ==================================================================== -->
+  <!-- TAB 3: VIDEO CLIPPER (UPLOAD & SPLIT)                                 -->
   <!-- ==================================================================== -->
   <div id="tab-split" class="tab-content">
 
@@ -1160,10 +1473,28 @@
   // ── Navigation Tabs ──────────────────────────────────────────────────
   function switchTab(tab) {
     document.getElementById("tab-ai").classList.toggle("active", tab === "ai");
+    document.getElementById("tab-i2v").classList.toggle("active", tab === "i2v");
     document.getElementById("tab-split").classList.toggle("active", tab === "split");
     document.getElementById("tab-ai-btn").classList.toggle("active", tab === "ai");
+    document.getElementById("tab-i2v-btn").classList.toggle("active", tab === "i2v");
     document.getElementById("tab-split-btn").classList.toggle("active", tab === "split");
   }
+
+  function saveEngineSettings() {
+    const model = document.getElementById("global-video-model").value;
+    const key = document.getElementById("global-api-key").value;
+    localStorage.setItem("ai_video_model", model);
+    localStorage.setItem("ai_video_api_key", key);
+    log(`Saved video engine: ${model}`, "info");
+  }
+
+  function loadEngineSettings() {
+    const savedModel = localStorage.getItem("ai_video_model");
+    const savedKey = localStorage.getItem("ai_video_api_key");
+    if (savedModel) document.getElementById("global-video-model").value = savedModel;
+    if (savedKey) document.getElementById("global-api-key").value = savedKey;
+  }
+  loadEngineSettings();
 
   // ── API Health Check ──────────────────────────────────────────────────
   async function checkAPI() {
@@ -1319,6 +1650,9 @@
     log(`Generating AI Video from comment: "${comment.substring(0, 45)}..." [${style}, ${aspect}]`, "info");
 
     try {
+      const apiKey = document.getElementById("global-api-key").value.trim();
+      const videoModel = document.getElementById("global-video-model").value;
+
       const res = await fetch(`${API}/api/generate-ai-video`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1330,6 +1664,8 @@
           subtitle_style: subs,
           use_bg_music: bgMusic,
           target_duration: selectedDuration,
+          api_key: apiKey,
+          video_model: videoModel,
           task_id: taskId
         })
       });
@@ -1411,6 +1747,238 @@
         `;
         scenesList.appendChild(d);
       });
+    }
+
+    card.scrollIntoView({ behavior: "smooth" });
+  }
+
+  // ── Image to AI Video (State & Logic) ────────────────────────────────
+  let selectedI2VFile = null;
+  let selectedI2VMotion = "zoom_in";
+  let selectedI2VDuration = 10;
+  let selectedI2VFormat = "9:16";
+
+  const MOTION_NAMES = {
+    "zoom_in": "🎬 Cinematic Zoom In (Push)",
+    "zoom_out": "🔍 Zoom Out (Reveal)",
+    "pan_right": "➡️ Pan Right Glide",
+    "pan_left": "⬅️ Pan Left Glide",
+    "tilt_up": "⬆️ Dramatic Tilt Up",
+    "tilt_down": "⬇️ Action Tilt Down",
+    "orbit": "💫 Dynamic Orbit",
+    "auto": "✨ Dynamic Auto"
+  };
+
+  function selectI2VMotion(motion) {
+    selectedI2VMotion = motion;
+    document.querySelectorAll("#i2v-motion-pills .pill-btn").forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.motion === motion);
+    });
+    const lbl = document.getElementById("active-i2v-motion-label");
+    if (lbl) lbl.textContent = MOTION_NAMES[motion] || motion;
+    log(`Selected camera motion: ${MOTION_NAMES[motion] || motion}`, "info");
+  }
+
+  function selectI2VDuration(dur) {
+    selectedI2VDuration = parseInt(dur, 10);
+    document.querySelectorAll("#i2v-duration-pills .pill-btn").forEach(btn => {
+      btn.classList.toggle("active", parseInt(btn.dataset.dur, 10) === selectedI2VDuration);
+    });
+    log(`Image video duration: ${dur}s`, "info");
+  }
+
+  function selectI2VFormat(fmt) {
+    selectedI2VFormat = fmt;
+    document.querySelectorAll("#i2v-format-pills .pill-btn").forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.fmt === fmt);
+    });
+    log(`Image video format: ${fmt}`, "info");
+  }
+
+  function fillI2VPreset(promptText, motion) {
+    document.getElementById("i2v-motion-prompt").value = promptText;
+    if (motion) selectI2VMotion(motion);
+    document.getElementById("i2v-motion-prompt").focus();
+    log(`Applied motion preset: "${promptText.substring(0, 30)}..."`, "info");
+  }
+
+  const i2vDz = document.getElementById("i2v-drop-zone");
+  const i2vFi = document.getElementById("i2v-file-input");
+
+  if (i2vDz && i2vFi) {
+    i2vDz.addEventListener("dragover", e => { e.preventDefault(); i2vDz.classList.add("drag-over"); });
+    i2vDz.addEventListener("dragleave", () => i2vDz.classList.remove("drag-over"));
+    i2vDz.addEventListener("drop", e => {
+      e.preventDefault();
+      i2vDz.classList.remove("drag-over");
+      if (e.dataTransfer.files[0]) {
+        handleI2VFile(e.dataTransfer.files[0]);
+      }
+    });
+    i2vFi.addEventListener("change", () => {
+      if (i2vFi.files[0]) handleI2VFile(i2vFi.files[0]);
+    });
+  }
+
+  function handleI2VFile(file) {
+    if (!file.type.startsWith("image/")) {
+      alert("Please upload an image file (JPG, PNG, WEBP)!");
+      return;
+    }
+    selectedI2VFile = file;
+    document.getElementById("i2v-filename").textContent = `🖼️ ${file.name}`;
+    document.getElementById("i2v-filesize").textContent = `${(file.size / 1024 / 1024).toFixed(2)} MB • Ready to animate`;
+    
+    const reader = new FileReader();
+    reader.onload = e => {
+      document.getElementById("i2v-preview-img").src = e.target.result;
+      document.getElementById("i2v-preview-box").classList.add("active");
+    };
+    reader.readAsDataURL(file);
+    log(`Selected image: ${file.name}`, "info");
+  }
+
+  function clearI2VImage() {
+    selectedI2VFile = null;
+    if (i2vFi) i2vFi.value = "";
+    document.getElementById("i2v-preview-box").classList.remove("active");
+    document.getElementById("i2v-preview-img").src = "";
+    log("Cleared selected image", "info");
+  }
+
+  async function generateImageToVideo() {
+    if (!selectedI2VFile) {
+      alert("Please select or drop an image to animate!");
+      return;
+    }
+
+    const motionPrompt = document.getElementById("i2v-motion-prompt").value.trim() || "Cinematic camera movement";
+    const voice = document.getElementById("i2v-voice").value;
+    const narration = document.getElementById("i2v-narration").value.trim();
+    const subs = document.getElementById("i2v-subtitles").value;
+    const bgMusic = document.getElementById("i2v-bg-music").checked;
+    const apiKey = document.getElementById("global-api-key").value.trim();
+    const videoModel = document.getElementById("global-video-model").value;
+
+    const btn = document.getElementById("generate-i2v-btn");
+    btn.disabled = true;
+
+    const pBox = document.getElementById("i2v-progress-box");
+    pBox.classList.add("active");
+    updateI2VProgressUI(10, "Analyzing image & setting up camera motion...");
+    setI2VStage(1);
+
+    const taskId = "ai_i2v_" + Date.now();
+    activeTaskId = taskId;
+
+    // Progress polling
+    progressPoller = setInterval(async () => {
+      try {
+        const r = await fetch(`${API}/progress/${activeTaskId}`);
+        if (r.ok) {
+          const data = await r.json();
+          if (data && data.percent !== undefined) {
+            updateI2VProgressUI(data.percent, data.status);
+            if (data.percent < 25) setI2VStage(1);
+            else if (data.percent < 60) setI2VStage(2);
+            else if (data.percent < 75) setI2VStage(3);
+            else if (data.percent < 90) setI2VStage(4);
+            else setI2VStage(5);
+          }
+        }
+      } catch (e) {}
+    }, 1200);
+
+    log(`Animating image with motion [${selectedI2VMotion}, ${selectedI2VDuration}s, ${selectedI2VFormat}]...`, "info");
+
+    try {
+      const fd = new FormData();
+      fd.append("image", selectedI2VFile);
+      fd.append("motion_prompt", motionPrompt);
+      fd.append("camera_motion", selectedI2VMotion);
+      fd.append("duration", selectedI2VDuration);
+      fd.append("aspect_ratio", selectedI2VFormat);
+      fd.append("voice_id", voice);
+      fd.append("narration", narration);
+      fd.append("subtitle_style", subs);
+      fd.append("use_bg_music", bgMusic);
+      fd.append("api_key", apiKey);
+      fd.append("video_model", videoModel);
+      fd.append("task_id", taskId);
+
+      const res = await fetch(`${API}/api/generate-image-to-video`, {
+        method: "POST",
+        body: fd
+      });
+
+      clearInterval(progressPoller);
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.detail || "Image to video generation failed");
+      }
+
+      const result = await res.json();
+      updateI2VProgressUI(100, "Complete!");
+      setI2VStage(5);
+      log(`✅ Image AI Video ready: ${result.filename} (${result.duration_formatted})`, "success");
+
+      showI2VResult(result);
+      loadSavedShorts();
+
+    } catch (err) {
+      clearInterval(progressPoller);
+      log(`❌ Animation failed: ${err.message}`, "error");
+      alert(`Image to Video error: ${err.message}`);
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  function updateI2VProgressUI(pct, text) {
+    document.getElementById("i2v-progress-bar").style.width = pct + "%";
+    document.getElementById("i2v-progress-pct").textContent = pct + "%";
+    if (text) document.getElementById("i2v-progress-status").textContent = text;
+  }
+
+  function setI2VStage(num) {
+    const steps = [
+      document.getElementById("i2v-step-img"),
+      document.getElementById("i2v-step-motion"),
+      document.getElementById("i2v-step-audio"),
+      document.getElementById("i2v-step-subs"),
+      document.getElementById("i2v-step-done")
+    ];
+    steps.forEach((s, idx) => {
+      s.classList.toggle("done", idx + 1 < num);
+      s.classList.toggle("active", idx + 1 === num);
+    });
+  }
+
+  function showI2VResult(data) {
+    const card = document.getElementById("i2v-result-card");
+    card.classList.add("active");
+
+    const player = document.getElementById("i2v-video-player");
+    player.src = `${API}${data.download_url}`;
+    player.load();
+    player.play().catch(() => {});
+
+    const wrap = document.getElementById("i2v-player-wrap");
+    wrap.classList.toggle("horizontal", data.aspect_ratio === "16:9");
+
+    document.getElementById("i2v-download-btn").href = `${API}${data.download_url}`;
+    document.getElementById("i2v-res-duration").textContent = data.duration_formatted || `${data.duration}s`;
+    document.getElementById("i2v-res-size").textContent = `${data.file_size_mb} MB`;
+    document.getElementById("i2v-res-res").textContent = data.resolution;
+    document.getElementById("i2v-res-motion").textContent = MOTION_NAMES[data.camera_motion] || data.camera_motion;
+
+    document.getElementById("i2v-res-prompt-text").textContent = `"${data.motion_prompt || 'Cinematic camera movement'}"`;
+    if (data.narration) {
+      document.getElementById("i2v-res-narration-box").style.display = "block";
+      document.getElementById("i2v-res-narration-text").textContent = `"${data.narration}"`;
+    } else {
+      document.getElementById("i2v-res-narration-box").style.display = "none";
     }
 
     card.scrollIntoView({ behavior: "smooth" });
@@ -1541,17 +2109,26 @@
 
       gallery.innerHTML = "";
       data.shorts.forEach(s => {
-        const isAI = s.filename.startsWith("ai_short_");
+        const isI2V = s.filename.startsWith("ai_i2v_");
+        const isAIShort = s.filename.startsWith("ai_short_");
+        const isAI = isAIShort || isI2V;
         const meta = aiMap[s.filename] || {};
-        const badgeLabel = isAI ? (meta.style_badge ? `${meta.style_badge} ${meta.video_format || 'SHORT'}` : '✨ AI SHORT / VIDEO') : '✂️ CLIPPED SHORT';
+        let badgeLabel = '✂️ CLIPPED SHORT';
+        if (isI2V) {
+          badgeLabel = `🖼️ ANIMATED IMAGE • ${(meta.camera_motion || 'MOTION').toUpperCase()}`;
+        } else if (isAIShort) {
+          badgeLabel = meta.style_badge ? `${meta.style_badge} ${meta.video_format || 'SHORT'}` : '✨ AI SHORT / VIDEO';
+        }
+
+        const titleText = isI2V ? (meta.motion_prompt || meta.source_image || s.filename) : (meta.comment || s.filename);
         const card = document.createElement("div");
         card.className = "short-card";
         card.innerHTML = `
           <div>
-            <div style="font-size:0.75rem; color:${isAI ? 'var(--accent)' : 'var(--cyan)'}; font-weight:700; margin-bottom:4px;">
+            <div style="font-size:0.75rem; color:${isI2V ? 'var(--accent3)' : (isAIShort ? 'var(--accent)' : 'var(--cyan)')}; font-weight:700; margin-bottom:4px;">
               ${badgeLabel}
             </div>
-            <div class="short-card-name" title="${meta.comment || s.filename}">${meta.comment ? `"${meta.comment.substring(0, 38)}..."` : s.filename}</div>
+            <div class="short-card-name" title="${titleText}">"${titleText.length > 38 ? titleText.substring(0, 38) + '...' : titleText}"</div>
             <div class="short-card-meta">${s.file_size_mb ? s.file_size_mb + ' MB' : ''} ${meta.duration_formatted ? '• ' + meta.duration_formatted : ''}</div>
           </div>
           <div style="display:flex; gap:8px; margin-top:10px;">

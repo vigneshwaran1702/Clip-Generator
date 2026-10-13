@@ -47,9 +47,25 @@ os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
 # Import AI Video Generation Engine
 try:
-    from ai_video_engine import create_ai_short_video, AVAILABLE_VOICES, POPULAR_PRESETS, STYLE_CONFIGS
+    from ai_video_engine import (
+        create_ai_short_video,
+        create_image_to_video,
+        AVAILABLE_VOICES,
+        POPULAR_PRESETS,
+        STYLE_CONFIGS,
+        AVAILABLE_VIDEO_MODELS,
+        CAMERA_MOTIONS
+    )
 except ImportError:
-    from .ai_video_engine import create_ai_short_video, AVAILABLE_VOICES, POPULAR_PRESETS, STYLE_CONFIGS
+    from .ai_video_engine import (
+        create_ai_short_video,
+        create_image_to_video,
+        AVAILABLE_VOICES,
+        POPULAR_PRESETS,
+        STYLE_CONFIGS,
+        AVAILABLE_VIDEO_MODELS,
+        CAMERA_MOTIONS
+    )
 
 # Absolute path to ffmpeg
 FFMPEG_PATH = r"C:\Users\hp\AppData\Local\Microsoft\WinGet\Packages\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\ffmpeg-8.1.1-full_build\bin\ffmpeg.exe"
@@ -464,6 +480,8 @@ class AIVideoRequest(BaseModel):
     subtitle_style: str = "viral_yellow"
     use_bg_music: bool = True
     target_duration: int = 30
+    api_key: str | None = None
+    video_model: str = "cinematic_motion"
     task_id: str | None = None
 
 
@@ -471,6 +489,15 @@ class AIVideoRequest(BaseModel):
 def get_voices():
     """List available neural voices."""
     return {"voices": AVAILABLE_VOICES}
+
+
+@app.get("/api/video-models")
+def get_video_models():
+    """List supported AI Video generation models and camera motion presets."""
+    return {
+        "video_models": AVAILABLE_VIDEO_MODELS,
+        "camera_motions": CAMERA_MOTIONS
+    }
 
 
 @app.get("/api/presets")
@@ -499,7 +526,7 @@ def get_styles():
 def generate_ai_video(req: AIVideoRequest):
     """
     Generate an AI Short video from any comment, prompt, or topic.
-    Includes scriptwriting, neural TTS voiceover, AI visuals, Ken Burns motion,
+    Includes scriptwriting, neural TTS voiceover, AI visuals, dynamic camera motion,
     viral captions, and ambient soundtrack mixing.
     """
     if not req.comment or not req.comment.strip():
@@ -521,6 +548,8 @@ def generate_ai_video(req: AIVideoRequest):
             subtitle_style=req.subtitle_style,
             use_bg_music=req.use_bg_music,
             target_duration=req.target_duration,
+            api_key=req.api_key,
+            video_model=req.video_model,
             progress_callback=progress_callback
         )
         write_progress(task_id, 100, "Complete!")
@@ -530,13 +559,80 @@ def generate_ai_video(req: AIVideoRequest):
         raise HTTPException(status_code=500, detail=f"AI video generation failed: {exc}")
 
 
+@app.post("/api/generate-image-to-video")
+def generate_image_to_video(
+    image: UploadFile = File(None),
+    existing_filename: str = Form(None),
+    motion_prompt: str = Form("Cinematic camera movement"),
+    camera_motion: str = Form("zoom_in"),
+    duration: int = Form(10),
+    aspect_ratio: str = Form("9:16"),
+    voice_id: str = Form("en-US-ChristopherNeural"),
+    narration: str = Form(""),
+    subtitle_style: str = Form("viral_yellow"),
+    use_bg_music: bool = Form(True),
+    api_key: str = Form(""),
+    video_model: str = Form("cinematic_motion"),
+    task_id: str = Form(None),
+):
+    """
+    Generate an AI Video directly from a given/uploaded image!
+    Applies real camera dynamics (zoom, pan, tilt, orbit), optional voiceover narration,
+    captions, and ambient music.
+    """
+    # Resolve image path
+    local_image_path = None
+    if image and image.filename:
+        safe_name = safe_filename(image.filename)
+        unique_name = f"i2v_{int(time.time())}_{safe_name}"
+        local_image_path = os.path.join(UPLOAD_FOLDER, unique_name)
+        with open(local_image_path, "wb") as f:
+            shutil.copyfileobj(image.file, f)
+    elif existing_filename:
+        safe_name = safe_filename(existing_filename)
+        candidate = os.path.join(UPLOAD_FOLDER, safe_name)
+        if os.path.exists(candidate):
+            local_image_path = candidate
+
+    if not local_image_path or not os.path.exists(local_image_path):
+        raise HTTPException(status_code=400, detail="Please upload or specify a valid source image.")
+
+    tid = task_id or f"ai_i2v_{int(time.time())}"
+    write_progress(tid, 5, "Initializing Image to Video generation...")
+
+    def progress_callback(pct: int, msg: str):
+        write_progress(tid, pct, msg)
+
+    try:
+        result = create_image_to_video(
+            image_path=local_image_path,
+            output_dir=OUTPUT_FOLDER,
+            motion_prompt=motion_prompt,
+            camera_motion=camera_motion,
+            duration=duration,
+            aspect_ratio=aspect_ratio,
+            voice_id=voice_id,
+            narration=narration,
+            subtitle_style=subtitle_style,
+            use_bg_music=use_bg_music,
+            api_key=api_key if api_key.strip() else None,
+            video_model=video_model,
+            progress_callback=progress_callback
+        )
+        write_progress(tid, 100, "Complete!")
+        return result
+    except Exception as exc:
+        write_progress(tid, 0, f"Error: {exc}")
+        raise HTTPException(status_code=500, detail=f"Image to Video generation failed: {exc}")
+
+
 @app.get("/api/ai-shorts")
 def list_ai_shorts():
-    """List all AI generated shorts with metadata and scenes."""
+    """List all AI generated shorts and image-to-video creations with metadata."""
     items = []
     if os.path.exists(OUTPUT_FOLDER):
         for fname in sorted(os.listdir(OUTPUT_FOLDER), reverse=True):
-            if fname.startswith("ai_short_") and fname.endswith(".json"):
+            if (fname.startswith("ai_short_") or fname.startswith("ai_i2v_")) and fname.endswith(".json"):
                 try:
                     with open(os.path.join(OUTPUT_FOLDER, fname), "r", encoding="utf-8") as f:
                         meta = json.load(f)
