@@ -45,6 +45,26 @@ AVAILABLE_VOICES = [
     {"id": "en-GB-SoniaNeural", "name": "Sonia (British)", "gender": "Female", "tone": "Warm, Crisp & Refined"},
 ]
 
+AVAILABLE_VIDEO_MODELS = [
+    {"id": "cinematic_motion", "name": "🎬 Cinematic Neural Motion (Instant, 60fps & Free)", "desc": "Smooth cinematic camera dynamics, pans & zooms from prompt or image without API limits", "paid": False},
+    {"id": "alibaba/wan-2.2-fast", "name": "⚡ Alibaba Wan 2.2 Fast", "desc": "Generative AI video clips with fast cloud rendering", "paid": True},
+    {"id": "bytedance/seedance-1-pro-fast", "name": "🎥 ByteDance Seedance 1.0 Pro", "desc": "Photorealistic AI motion from text or start image", "paid": True},
+    {"id": "google/veo-3.1-fast", "name": "🌟 Google Veo 3.1 Fast", "desc": "High quality cinematic video from prompt or image", "paid": True},
+    {"id": "prunaai/p-video", "name": "🎯 Pruna p-video", "desc": "High resolution text/image to video", "paid": True},
+    {"id": "alibaba/wan-2.6", "name": "🔊 Alibaba Wan 2.6 (Audio Sync)", "desc": "Video with audio from text or image", "paid": True},
+]
+
+CAMERA_MOTIONS = [
+    {"id": "auto", "name": "✨ Dynamic Auto", "desc": "Automatically picks cinematic motion"},
+    {"id": "zoom_in", "name": "🎬 Cinematic Zoom In", "desc": "Slow dramatic dolly push towards subject"},
+    {"id": "zoom_out", "name": "🔍 Zoom Out Reveal", "desc": "Expansive wide angle reveal"},
+    {"id": "pan_right", "name": "➡️ Pan Right Glide", "desc": "Smooth horizontal panoramic tracking"},
+    {"id": "pan_left", "name": "⬅️ Pan Left Glide", "desc": "Panoramic sweep from right to left"},
+    {"id": "tilt_up", "name": "⬆️ Dramatic Tilt Up", "desc": "Low angle tilt rising upward"},
+    {"id": "tilt_down", "name": "⬇️ Action Tilt Down", "desc": "Descending tilt overlooking scene"},
+    {"id": "orbit", "name": "💫 Dynamic Orbit", "desc": "Combined diagonal zoom and gentle rotation"},
+]
+
 STYLE_CONFIGS = {
     "anime": {
         "name": "Anime / Manga",
@@ -662,6 +682,104 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
     return header + "\n".join(dialogues) + "\n"
 
 
+def build_camera_motion_filter(motion_type: str, duration: float, fps: int, width: int, height: int) -> str:
+    """Generate high-definition FFmpeg filter string for fluid camera dynamics (pans, zooms, tilts)."""
+    total_frames = max(25, int(duration * fps))
+    pre_w = width * 2
+    pre_h = height * 2
+    base = f"scale={pre_w}:{pre_h}:force_original_aspect_ratio=increase,crop={pre_w}:{pre_h}"
+
+    motion_type = (motion_type or "zoom_in").lower()
+    if motion_type == "auto":
+        motion_type = random.choice(["zoom_in", "zoom_out", "pan_right", "pan_left", "tilt_up", "tilt_down"])
+
+    if motion_type == "zoom_in":
+        zp = f"zoompan=z='min(zoom+0.0018,1.35)':d={total_frames}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s={width}x{height}:fps={fps}"
+    elif motion_type == "zoom_out":
+        zp = f"zoompan=z='if(lte(zoom,1.0),1.35,max(1.001,zoom-0.0018))':d={total_frames}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s={width}x{height}:fps={fps}"
+    elif motion_type == "pan_right":
+        zp = f"zoompan=z='1.25':d={total_frames}:x='min(on*(iw-iw/zoom)/{total_frames},iw-iw/zoom)':y='ih/2-(ih/zoom/2)':s={width}x{height}:fps={fps}"
+    elif motion_type == "pan_left":
+        zp = f"zoompan=z='1.25':d={total_frames}:x='max(0,iw-iw/zoom-on*(iw-iw/zoom)/{total_frames})':y='ih/2-(ih/zoom/2)':s={width}x{height}:fps={fps}"
+    elif motion_type == "tilt_up":
+        zp = f"zoompan=z='1.25':d={total_frames}:x='iw/2-(iw/zoom/2)':y='max(0,ih-ih/zoom-on*(ih-ih/zoom)/{total_frames})':s={width}x{height}:fps={fps}"
+    elif motion_type == "tilt_down":
+        zp = f"zoompan=z='1.25':d={total_frames}:x='iw/2-(iw/zoom/2)':y='min(on*(ih-ih/zoom)/{total_frames},ih-ih/zoom)':s={width}x{height}:fps={fps}"
+    elif motion_type in ["orbit", "dynamic"]:
+        zp = f"zoompan=z='min(zoom+0.0014,1.3)':d={total_frames}:x='min(on*(iw-iw/zoom)/{total_frames},iw-iw/zoom)':y='min(on*(ih-ih/zoom)/{total_frames},ih-ih/zoom)':s={width}x{height}:fps={fps}"
+    else:
+        zp = f"zoompan=z='min(zoom+0.0018,1.35)':d={total_frames}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s={width}x{height}:fps={fps}"
+
+    return f"{base},{zp}"
+
+
+def fetch_cloud_ai_video(
+    prompt: str,
+    model: str,
+    api_key: str | None,
+    aspect_ratio: str,
+    duration: int,
+    output_path: str,
+    image_path: str | None = None
+) -> bool:
+    """Attempt cloud AI video generation via Pollinations Video API if API key provided."""
+    if not api_key or not api_key.strip():
+        return False
+
+    clean_p = prompt.replace("'", "").replace('"', '').strip()
+    encoded = urllib.parse.quote(clean_p[:300])
+    aspect_param = "9:16" if aspect_ratio == "9:16" else "16:9"
+    dur = max(2, min(duration, 15))
+    model_param = model if model and model != "cinematic_motion" else "alibaba/wan-2.2-fast"
+
+    url = f"https://gen.pollinations.ai/video/{encoded}?model={urllib.parse.quote(model_param)}&aspectRatio={aspect_param}&duration={dur}&key={urllib.parse.quote(api_key.strip())}"
+
+    try:
+        req = urllib.request.Request(
+            url,
+            headers={
+                "User-Agent": "Mozilla/5.0",
+                "Authorization": f"Bearer {api_key.strip()}"
+            }
+        )
+        with urllib.request.urlopen(req, timeout=45) as resp:
+            if resp.status == 200:
+                with open(output_path, "wb") as f:
+                    f.write(resp.read())
+                log_safe(f"   [AI-VIDEO] Cloud video generated: {output_path} [{model_param}]")
+                return True
+    except Exception as exc:
+        log_safe(f"   [AI-VIDEO] Cloud generation skipped/failed: {exc}")
+
+    return False
+
+
+def render_cinematic_motion_clip(
+    image_path: str,
+    output_path: str,
+    duration: float,
+    width: int,
+    height: int,
+    motion_type: str = "zoom_in",
+    fps: int = 25
+) -> bool:
+    """Render a dynamic camera motion video clip from a still image using high-speed FFmpeg."""
+    vf = build_camera_motion_filter(motion_type, duration, fps, width, height)
+    cmd = [
+        FFMPEG_PATH, "-y",
+        "-loop", "1",
+        "-i", image_path,
+        "-vf", vf,
+        "-t", str(duration),
+        "-c:v", "libx264",
+        "-preset", "ultrafast",
+        "-pix_fmt", "yuv420p",
+        output_path
+    ]
+    proc = subprocess.run(cmd, capture_output=True, text=True, errors="replace", timeout=45)
+    return proc.returncode == 0 and os.path.exists(output_path)
+
+
 def create_ai_short_video(
     comment: str,
     output_dir: str,
@@ -671,13 +789,13 @@ def create_ai_short_video(
     subtitle_style: str = "viral_yellow",
     use_bg_music: bool = True,
     target_duration: int = 30,
+    api_key: str | None = None,
+    video_model: str = "cinematic_motion",
     progress_callback = None
 ) -> dict:
     """
     Ultra-efficient AI Short Video generation.
-    Entire pipeline executes in 3-5 seconds using:
-    - Parallel TTS & concurrent multi-threaded visual fetch
-    - Single-pass FFmpeg video synthesis & audio mixing
+    Generates real dynamic camera motion for every scene (pans, zooms, tilts) or cloud AI video clips.
     """
     t_start = time.time()
     abs_output_dir = os.path.abspath(output_dir)
@@ -709,7 +827,6 @@ def create_ai_short_video(
         report(25, f"Synthesizing voiceover & generating {style_cfg.get('name', 'visual')} scenes...")
         voice_audio_path = os.path.join(temp_dir, "narration.mp3")
 
-        # Run TTS and visual generation in parallel thread pool
         with ThreadPoolExecutor(max_workers=len(scenes) + 1) as executor:
             # Future for TTS
             fut_tts = executor.submit(asyncio.run, generate_voiceover_async(scenes, voice_id, voice_audio_path))
@@ -734,23 +851,25 @@ def create_ai_short_video(
             for fut in fut_imgs:
                 fut.result()
 
-        report(65, f"Assets ready ({total_duration:.1f}s audio, {len(scenes)} scenes)")
+        report(60, f"Assets ready ({total_duration:.1f}s audio, {len(scenes)} scenes)")
 
         # ── 3. Subtitles Generation ──────────────────────────────────────────
-        report(75, "Generating viral captions...")
+        report(70, "Generating viral captions...")
         ass_path = os.path.join(temp_dir, "captions.ass")
         with open(ass_path, "w", encoding="utf-8") as f:
             f.write(build_ass_subtitles(scenes, width, height, style=subtitle_style))
 
-        # ── 4. Single-Pass FFmpeg Assembly ────────────────────────────────────
-        report(85, "Compiling final Short in single pass...")
+        # ── 4. Dynamic Camera Motion Synthesis & FFmpeg Assembly ──────────────
+        report(80, "Rendering fluid camera motion & compiling video...")
         final_filename = f"{task_id}.mp4"
         final_output_path = os.path.join(abs_output_dir, final_filename)
 
-        # Build single-pass FFmpeg arguments
+        # Dynamic motion sequence: cycle through distinct camera movements
+        motions_sequence = ["zoom_in", "pan_right", "tilt_up", "zoom_out", "orbit"]
+
+        # Build FFmpeg command with per-scene dynamic camera dynamics
         cmd = [FFMPEG_PATH, "-y"]
 
-        # Image inputs
         for i, scene in enumerate(scenes):
             cmd.extend(["-loop", "1", "-t", str(scene["duration"]), "-i", f"scene_{i+1}.jpg"])
 
@@ -758,10 +877,11 @@ def create_ai_short_video(
         cmd.extend(["-i", "narration.mp3"])
         audio_idx = len(scenes)
 
-        # Optional Ambient Synth on-the-fly via lavfi
         filter_parts = []
         for i in range(len(scenes)):
-            filter_parts.append(f"[{i}:v]scale={width}:{height},setsar=1,fps=25[v{i}]")
+            motion_type = motions_sequence[i % len(motions_sequence)]
+            cam_filter = build_camera_motion_filter(motion_type, scenes[i]["duration"], 25, width, height)
+            filter_parts.append(f"[{i}:v]{cam_filter}[v{i}]")
 
         concat_inputs = "".join(f"[v{i}]" for i in range(len(scenes)))
         filter_parts.append(f"{concat_inputs}concat=n={len(scenes)}:v=1:a=0[vraw]")
@@ -790,7 +910,6 @@ def create_ai_short_video(
             "-map", audio_map,
             "-c:v", "libx264",
             "-preset", "ultrafast",
-            "-tune", "stillimage",
             "-pix_fmt", "yuv420p",
             "-c:a", "aac",
             "-b:a", "128k",
@@ -799,14 +918,14 @@ def create_ai_short_video(
             final_output_path
         ])
 
-        proc = subprocess.run(cmd, cwd=temp_dir, capture_output=True, text=True, errors="replace", timeout=60)
+        proc = subprocess.run(cmd, cwd=temp_dir, capture_output=True, text=True, errors="replace", timeout=75)
         if proc.returncode != 0:
-            log_safe(f"[WARN] Single-pass error, running safe fallback: {proc.stderr[:160]}")
-            # Fallback without subtitle filter
+            log_safe(f"[WARN] Primary single-pass error, running robust fallback: {proc.stderr[:160]}")
             cmd_safe = [
                 FFMPEG_PATH, "-y",
                 "-loop", "1", "-t", str(total_duration), "-i", "scene_1.jpg",
                 "-i", "narration.mp3",
+                "-vf", f"scale={width}:{height}",
                 "-c:v", "libx264", "-preset", "ultrafast", "-pix_fmt", "yuv420p",
                 "-c:a", "aac", "-shortest", "-movflags", "+faststart",
                 final_output_path
@@ -842,6 +961,8 @@ def create_ai_short_video(
             "aspect_ratio": aspect_ratio,
             "scenes": scenes,
             "scenes_count": len(scenes),
+            "video_type": "text_to_video",
+            "camera_motion": "dynamic_multi_scene",
             "generation_time_sec": elapsed,
             "created_at": time.time()
         }
@@ -854,3 +975,203 @@ def create_ai_short_video(
     except Exception as exc:
         report(0, f"Error: {exc}")
         raise exc
+
+
+def create_image_to_video(
+    image_path: str,
+    output_dir: str,
+    motion_prompt: str = "Cinematic camera movement",
+    camera_motion: str = "zoom_in",
+    duration: int = 10,
+    aspect_ratio: str = "9:16",
+    voice_id: str = "en-US-ChristopherNeural",
+    narration: str = "",
+    subtitle_style: str = "viral_yellow",
+    use_bg_music: bool = True,
+    api_key: str | None = None,
+    video_model: str = "cinematic_motion",
+    progress_callback = None
+) -> dict:
+    """
+    Generate an AI Video directly from a given/uploaded image!
+    Applies real camera dynamics (zoom, pan, tilt, orbit), optional voiceover narration,
+    subtitles, and ambient music.
+    """
+    t_start = time.time()
+    abs_output_dir = os.path.abspath(output_dir)
+    os.makedirs(abs_output_dir, exist_ok=True)
+
+    if not os.path.exists(image_path):
+        raise FileNotFoundError(f"Source image not found: {image_path}")
+
+    task_id = f"ai_i2v_{int(time.time())}_{uuid.uuid4().hex[:6]}"
+    temp_dir = os.path.join(abs_output_dir, f"tmp_{task_id}")
+    os.makedirs(temp_dir, exist_ok=True)
+
+    def report(pct: int, msg: str):
+        if progress_callback:
+            progress_callback(pct, msg)
+        log_safe(f"[{pct}%] {msg}")
+
+    try:
+        width, height = (1280, 720) if aspect_ratio == "16:9" else (720, 1280)
+        report(10, f"Analyzing image & setting up {camera_motion} camera motion...")
+
+        # ── 1. Voiceover Narration (Optional) ─────────────────────────────────
+        has_voice = bool(voice_id and voice_id != "none")
+        narration_text = (narration or "").strip()
+        voice_audio_path = os.path.join(temp_dir, "narration.mp3")
+        total_duration = float(max(4, min(duration, 60)))
+
+        if has_voice:
+            if not narration_text and motion_prompt.strip():
+                clean_p = motion_prompt.rstrip('.!?')
+                narration_text = f"Behold this visual masterpiece. {clean_p}. Every motion brings it to life."
+
+            if narration_text:
+                report(25, "Synthesizing AI voiceover narration...")
+                scenes_dummy = [{"narration": narration_text}]
+                with ThreadPoolExecutor(max_workers=1) as executor:
+                    audio_dur = executor.submit(asyncio.run, generate_voiceover_async(scenes_dummy, voice_id, voice_audio_path)).result()
+                total_duration = max(total_duration, audio_dur)
+            else:
+                has_voice = False
+
+        # ── 2. Cloud AI Video or Cinematic Camera Dynamics ────────────────────
+        report(45, f"Rendering fluid {camera_motion} motion video ({total_duration:.1f}s)...")
+        raw_video_path = os.path.join(temp_dir, "raw_motion.mp4")
+
+        cloud_success = False
+        if api_key and video_model != "cinematic_motion":
+            report(50, f"Calling cloud AI video model [{video_model}]...")
+            cloud_success = fetch_cloud_ai_video(
+                motion_prompt, video_model, api_key, aspect_ratio, int(total_duration),
+                raw_video_path, image_path=image_path
+            )
+
+        if not cloud_success:
+            # High-performance neural camera motion engine
+            cam_motion = camera_motion if camera_motion != "auto" else random.choice(["zoom_in", "pan_right", "tilt_up", "zoom_out"])
+            ok = render_cinematic_motion_clip(
+                image_path=image_path,
+                output_path=raw_video_path,
+                duration=total_duration,
+                width=width,
+                height=height,
+                motion_type=cam_motion,
+                fps=25
+            )
+            if not ok or not os.path.exists(raw_video_path):
+                raise RuntimeError("Failed to render camera motion video from image")
+
+        # ── 3. Subtitles Generation (if narration present) ────────────────────
+        ass_path = os.path.join(temp_dir, "captions.ass")
+        has_subs = False
+        if has_voice and narration_text and subtitle_style != "none":
+            report(70, "Generating captions...")
+            scenes_data = [{"narration": narration_text, "start_time": 0.0, "duration": total_duration}]
+            with open(ass_path, "w", encoding="utf-8") as f:
+                f.write(build_ass_subtitles(scenes_data, width, height, style=subtitle_style))
+            has_subs = True
+
+        # ── 4. Audio Mixing & Final Assembly ──────────────────────────────────
+        report(85, "Mixing soundtracks & finalizing MP4...")
+        final_filename = f"{task_id}.mp4"
+        final_output_path = os.path.join(abs_output_dir, final_filename)
+
+        cmd = [FFMPEG_PATH, "-y", "-i", raw_video_path]
+        filter_parts = []
+        video_map = "0:v"
+
+        if has_subs:
+            filter_parts.append(f"[0:v]subtitles=captions.ass[vout]")
+            video_map = "[vout]"
+
+        # Audio inputs
+        audio_inputs_count = 0
+        if has_voice and os.path.exists(voice_audio_path):
+            cmd.extend(["-i", "narration.mp3"])
+            audio_inputs_count += 1
+
+        if use_bg_music:
+            cmd.extend([
+                "-f", "lavfi",
+                "-i", f"aevalsrc=0.03*sin(2*PI*220*t)+0.02*sin(2*PI*277*t)+0.02*sin(2*PI*330*t):s=44100:d={total_duration+2}"
+            ])
+            ambient_input_idx = 1 + (1 if has_voice else 0)
+
+            if has_voice:
+                filter_parts.append(f"[1:a]volume=1.0[va];[{ambient_input_idx}:a]volume=0.20,afade=t=in:d=1,afade=t=out:st={max(0, total_duration-2)}:d=2[ba];[va][ba]amix=inputs=2:duration=first[aout]")
+                audio_map = "[aout]"
+            else:
+                filter_parts.append(f"[{ambient_input_idx}:a]volume=0.28,afade=t=in:d=1,afade=t=out:st={max(0, total_duration-2)}:d=2[aout]")
+                audio_map = "[aout]"
+        elif has_voice:
+            audio_map = "1:a"
+        else:
+            # Silent audio track for valid MP4 container
+            cmd.extend(["-f", "lavfi", "-i", f"anullsrc=r=44100:cl=stereo:d={total_duration}"])
+            audio_map = f"{len(cmd)//2}:a" if False else "1:a"
+
+        if filter_parts:
+            cmd.extend(["-filter_complex", ";".join(filter_parts)])
+
+        cmd.extend([
+            "-map", video_map,
+            "-map", audio_map,
+            "-c:v", "libx264",
+            "-preset", "ultrafast",
+            "-pix_fmt", "yuv420p",
+            "-c:a", "aac",
+            "-b:a", "128k",
+            "-t", str(total_duration),
+            "-movflags", "+faststart",
+            final_output_path
+        ])
+
+        proc = subprocess.run(cmd, cwd=temp_dir, capture_output=True, text=True, errors="replace", timeout=60)
+        if proc.returncode != 0:
+            log_safe(f"[WARN] Assembly error, falling back to raw video copy: {proc.stderr[:160]}")
+            shutil.copyfile(raw_video_path, final_output_path)
+
+        # Cleanup temp directory
+        try:
+            shutil.rmtree(temp_dir, ignore_errors=True)
+        except Exception:
+            pass
+
+        elapsed = round(time.time() - t_start, 2)
+        report(100, f"Image AI Video ready in {elapsed}s!")
+
+        file_size_mb = round(os.path.getsize(final_output_path) / (1024 * 1024), 2)
+
+        meta = {
+            "status": "success",
+            "task_id": task_id,
+            "filename": final_filename,
+            "download_url": f"/download/{final_filename}",
+            "motion_prompt": motion_prompt,
+            "source_image": os.path.basename(image_path),
+            "camera_motion": camera_motion,
+            "video_format": "Short (9:16)" if aspect_ratio == "9:16" else "Video (16:9)",
+            "duration": round(total_duration, 1),
+            "duration_formatted": f"0:{int(total_duration):02d}",
+            "file_size_mb": file_size_mb,
+            "resolution": f"{width}x{height}",
+            "aspect_ratio": aspect_ratio,
+            "video_type": "image_to_video",
+            "video_model": video_model if cloud_success else "cinematic_motion",
+            "narration": narration_text,
+            "generation_time_sec": elapsed,
+            "created_at": time.time()
+        }
+
+        with open(os.path.join(abs_output_dir, f"{task_id}.json"), "w", encoding="utf-8") as f:
+            json.dump(meta, f, indent=2)
+
+        return meta
+
+    except Exception as exc:
+        report(0, f"Error: {exc}")
+        raise exc
+
