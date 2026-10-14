@@ -12,4 +12,7 @@ outputs/
 uploads/
 progress/
 .env
+.env.local
+.env.*.local
+dist/
 .DS_Store
