@@ -818,6 +818,9 @@
     <button class="nav-tab" id="tab-split-btn" onclick="switchTab('split')">
       ✂️ Video Clipper
     </button>
+    <button class="nav-tab" id="tab-wan-btn" onclick="switchTab('wan')">
+      ⚡ Wan v2.7 (Supabase)
+    </button>
   </div>
 
   <div class="api-status">
@@ -1426,6 +1429,119 @@
   </div>
 
   <!-- ==================================================================== -->
+  <!-- TAB 4: FAL.AI WAN V2.7 VIA SUPABASE EDGE FUNCTIONS                   -->
+  <!-- ==================================================================== -->
+  <div id="tab-wan" class="tab-content">
+    <div class="hero-banner">
+      <h2>⚡ Fal.ai Wan v2.7 AI Video Generation</h2>
+      <p>Powered by <strong>Supabase Edge Functions</strong>, <strong>PostgreSQL RLS Jobs Table</strong>, and <strong>fal-ai/wan/v2.7</strong> text-to-video & image-to-video queue models.</p>
+    </div>
+
+    <!-- Credentials & Auth Card -->
+    <div class="card" style="margin-bottom: 20px;">
+      <div class="card-header">
+        <div class="card-title">
+          <div class="step-badge">1</div>
+          <span>Supabase Edge Functions & Authentication</span>
+        </div>
+        <div id="wan-user-badge" style="font-size:0.8rem; color:var(--muted); background:var(--surface); padding:4px 12px; border-radius:12px; border:1px solid var(--border);">
+          Not Signed In
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:14px; margin-bottom:14px;">
+        <div class="form-group">
+          <label for="wan-supabase-url">Supabase Project URL</label>
+          <input id="wan-supabase-url" class="text-input" placeholder="https://your-project.supabase.co" onchange="saveWanConfig()"/>
+        </div>
+        <div class="form-group">
+          <label for="wan-supabase-key">Supabase Anon Key</label>
+          <input id="wan-supabase-key" type="password" class="text-input" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6..." onchange="saveWanConfig()"/>
+        </div>
+      </div>
+
+      <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+        <button class="btn btn-primary" style="padding:8px 16px; font-size:0.85rem;" onclick="wanGuestLogin()">
+          ⚡ 1-Click Guest Login
+        </button>
+        <button class="btn btn-secondary" style="padding:8px 16px; font-size:0.85rem;" onclick="wanEmailLoginPrompt()">
+          ✉️ Sign In / Register
+        </button>
+        <span style="font-size:0.75rem; color:var(--muted);">
+          *Required by Supabase RLS so jobs belong to your authenticated user account.
+        </span>
+      </div>
+    </div>
+
+    <!-- Video Generator Card -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">
+          <div class="step-badge">2</div>
+          <span>Configure & Generate Wan v2.7 Video</span>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:14px; margin-bottom:16px;">
+        <div class="form-group">
+          <label for="wan-mode">Generation Mode</label>
+          <select id="wan-mode" class="select-input" onchange="onWanModeChange()">
+            <option value="text">Text to Video (fal-ai/wan/v2.7/text-to-video)</option>
+            <option value="image">Image to Video (fal-ai/wan/v2.7/image-to-video)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="wan-duration">Duration</label>
+          <select id="wan-duration" class="select-input">
+            <option value="5">5 Seconds</option>
+            <option value="10">10 Seconds</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group" id="wan-image-url-group" style="display:none; margin-bottom:16px;">
+        <label for="wan-image-url">Image URL (Must be public HTTPS)</label>
+        <input id="wan-image-url" class="text-input" placeholder="https://example.com/character.png"/>
+      </div>
+
+      <div class="form-group">
+        <label for="wan-prompt">Prompt</label>
+        <textarea id="wan-prompt" class="prompt-box" rows="3" placeholder="A cinematic drone shot of a neon cyberpunk city at night in heavy rain, reflections on asphalt, photorealistic 8k..."></textarea>
+      </div>
+
+      <div style="display:flex; gap:12px; margin-top:16px;">
+        <button class="btn btn-primary" id="wan-generate-btn" onclick="generateWanVideo()">
+          🚀 Generate Wan v2.7 Video
+        </button>
+      </div>
+
+      <div class="progress-box" id="wan-progress-box" style="display:none; margin-top:18px;">
+        <div class="progress-header">
+          <span class="progress-status" id="wan-progress-status">Submitting to Fal.ai queue...</span>
+          <span class="progress-pct" id="wan-progress-pct">Queued</span>
+        </div>
+        <div class="progress-bar-wrap">
+          <div class="progress-bar-fill" id="wan-progress-bar" style="width: 25%;"></div>
+        </div>
+      </div>
+
+      <div id="wan-error-alert" style="display:none; margin-top:14px; padding:12px 16px; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.4); border-radius:10px; color:#fca5a5; font-size:0.88rem;"></div>
+
+      <div id="wan-result-card" style="display:none; margin-top:20px; padding:16px; background:var(--surface); border:1px solid var(--border); border-radius:12px;">
+        <h3 style="margin-bottom:12px; color:var(--green); font-size:1.05rem;">🎉 Generated Wan v2.7 Video Ready!</h3>
+        <video id="wan-video-player" controls playsinline style="width:100%; max-width:720px; border-radius:8px; background:#000;"></video>
+        <div style="margin-top:12px; display:flex; gap:10px;">
+          <a id="wan-download-btn" class="btn btn-primary" href="#" target="_blank" download="wan_v27_video.mp4">
+            ⬇️ Download Video (.MP4)
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==================================================================== -->
   <!-- VIDEO LIBRARY / GENERATED SHORTS GALLERY                             -->
   <!-- ==================================================================== -->
   <div class="card">
@@ -1462,6 +1578,7 @@
 
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
   const API = (window.location.protocol.startsWith("http") && window.location.port === "8000")
     ? window.location.origin
@@ -1475,10 +1592,224 @@
     document.getElementById("tab-ai").classList.toggle("active", tab === "ai");
     document.getElementById("tab-i2v").classList.toggle("active", tab === "i2v");
     document.getElementById("tab-split").classList.toggle("active", tab === "split");
+    document.getElementById("tab-wan").classList.toggle("active", tab === "wan");
     document.getElementById("tab-ai-btn").classList.toggle("active", tab === "ai");
     document.getElementById("tab-i2v-btn").classList.toggle("active", tab === "i2v");
     document.getElementById("tab-split-btn").classList.toggle("active", tab === "split");
+    document.getElementById("tab-wan-btn").classList.toggle("active", tab === "wan");
   }
+
+  // ── Fal.ai Wan v2.7 & Supabase Integration ───────────────────────────
+  let wanSupabaseClient = null;
+  let wanCurrentUser = null;
+  let wanPollTimer = null;
+
+  function initWanSupabase() {
+    const url = localStorage.getItem("wan_supabase_url") || "";
+    const key = localStorage.getItem("wan_supabase_key") || "";
+    if (url) document.getElementById("wan-supabase-url").value = url;
+    if (key) document.getElementById("wan-supabase-key").value = key;
+
+    if (url && key && window.supabase) {
+      try {
+        wanSupabaseClient = window.supabase.createClient(url, key);
+        wanSupabaseClient.auth.getSession().then(({ data: { session } }) => {
+          setWanUser(session?.user ?? null);
+        });
+        wanSupabaseClient.auth.onAuthStateChange((_event, session) => {
+          setWanUser(session?.user ?? null);
+        });
+      } catch (e) {
+        console.warn("Supabase init error:", e);
+      }
+    }
+  }
+
+  function setWanUser(user) {
+    wanCurrentUser = user;
+    const badge = document.getElementById("wan-user-badge");
+    if (user) {
+      badge.textContent = `👤 ${user.email || "Guest (" + user.id.slice(0, 6) + "…)"}`;
+      badge.style.color = "var(--green)";
+      badge.style.borderColor = "var(--green)";
+    } else {
+      badge.textContent = "Not Signed In";
+      badge.style.color = "var(--muted)";
+      badge.style.borderColor = "var(--border)";
+    }
+  }
+
+  function saveWanConfig() {
+    const url = document.getElementById("wan-supabase-url").value.trim();
+    const key = document.getElementById("wan-supabase-key").value.trim();
+    localStorage.setItem("wan_supabase_url", url);
+    localStorage.setItem("wan_supabase_key", key);
+    initWanSupabase();
+    log("Saved Supabase project credentials for Wan v2.7.", "info");
+  }
+
+  async function wanGuestLogin() {
+    saveWanConfig();
+    if (!wanSupabaseClient) {
+      alert("Please enter your Supabase Project URL and Anon Key first.");
+      return;
+    }
+    try {
+      const { data, error } = await wanSupabaseClient.auth.signInAnonymously();
+      if (error) throw error;
+      setWanUser(data.user);
+      log("Signed in anonymously for Wan v2.7 jobs.", "success");
+    } catch (err) {
+      alert("Sign in error: " + (err.message || err));
+    }
+  }
+
+  async function wanEmailLoginPrompt() {
+    saveWanConfig();
+    if (!wanSupabaseClient) {
+      alert("Please enter your Supabase Project URL and Anon Key first.");
+      return;
+    }
+    const email = prompt("Enter your email:");
+    if (!email) return;
+    const password = prompt("Enter your password (min 6 chars):");
+    if (!password) return;
+
+    try {
+      let { data, error } = await wanSupabaseClient.auth.signInWithPassword({ email, password });
+      if (error) {
+        // try sign up
+        const su = await wanSupabaseClient.auth.signUp({ email, password });
+        if (su.error) throw su.error;
+        data = su.data;
+      }
+      setWanUser(data.user);
+      log(`Signed in as ${email}`, "success");
+    } catch (err) {
+      alert("Authentication error: " + (err.message || err));
+    }
+  }
+
+  function onWanModeChange() {
+    const mode = document.getElementById("wan-mode").value;
+    document.getElementById("wan-image-url-group").style.display = mode === "image" ? "block" : "none";
+  }
+
+  async function generateWanVideo() {
+    clearTimeout(wanPollTimer);
+    const errBox = document.getElementById("wan-error-alert");
+    const progBox = document.getElementById("wan-progress-box");
+    const progText = document.getElementById("wan-progress-status");
+    const resCard = document.getElementById("wan-result-card");
+    const btn = document.getElementById("wan-generate-btn");
+
+    errBox.style.display = "none";
+    resCard.style.display = "none";
+
+    saveWanConfig();
+    if (!wanSupabaseClient) {
+      errBox.textContent = "⚠️ Please enter your Supabase Project URL and Anon Key.";
+      errBox.style.display = "block";
+      return;
+    }
+
+    if (!wanCurrentUser) {
+      errBox.textContent = "⚠️ Please click '1-Click Guest Login' or 'Sign In' first (required by Supabase RLS).";
+      errBox.style.display = "block";
+      return;
+    }
+
+    const mode = document.getElementById("wan-mode").value;
+    const duration = Number(document.getElementById("wan-duration").value);
+    const prompt = document.getElementById("wan-prompt").value.trim();
+    const imageUrl = document.getElementById("wan-image-url").value.trim();
+
+    if (!prompt) {
+      errBox.textContent = "⚠️ Enter a video prompt.";
+      errBox.style.display = "block";
+      return;
+    }
+
+    if (mode === "image" && (!imageUrl || !imageUrl.startsWith("https://"))) {
+      errBox.textContent = "⚠️ A valid public https:// image URL is required for Image-to-Video mode.";
+      errBox.style.display = "block";
+      return;
+    }
+
+    btn.disabled = true;
+    progBox.style.display = "block";
+    progText.textContent = "Submitting job to Supabase create-video function...";
+
+    try {
+      const { data, error } = await wanSupabaseClient.functions.invoke("create-video", {
+        body: {
+          prompt,
+          mode,
+          duration,
+          ...(mode === "image" ? { image_url: imageUrl } : {})
+        }
+      });
+
+      if (error) throw error;
+      if (!data?.request_id) throw new Error(data?.error || "Could not start video generation.");
+
+      log(`Wan v2.7 job queued: ${data.request_id}`, "info");
+      pollWanStatus(data.request_id);
+    } catch (err) {
+      btn.disabled = false;
+      progBox.style.display = "none";
+      errBox.textContent = "⚠️ " + (err.message || "Failed to submit video generation job.");
+      errBox.style.display = "block";
+    }
+  }
+
+  async function pollWanStatus(requestId) {
+    const progText = document.getElementById("wan-progress-status");
+    const progBar = document.getElementById("wan-progress-bar");
+    const progPct = document.getElementById("wan-progress-pct");
+    const btn = document.getElementById("wan-generate-btn");
+    const errBox = document.getElementById("wan-error-alert");
+    const resCard = document.getElementById("wan-result-card");
+    const player = document.getElementById("wan-video-player");
+    const dlBtn = document.getElementById("wan-download-btn");
+
+    try {
+      const { data, error } = await wanSupabaseClient.functions.invoke("video-status", {
+        body: { request_id: requestId }
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      if (data.status === "completed" && data.video_url) {
+        btn.disabled = false;
+        progText.textContent = "Video generation complete!";
+        progBar.style.width = "100%";
+        progPct.textContent = "100%";
+        player.src = data.video_url;
+        dlBtn.href = data.video_url;
+        resCard.style.display = "block";
+        log("Wan v2.7 video ready!", "success");
+        return;
+      }
+
+      if (data.status === "failed") {
+        throw new Error("Wan v2.7 generation failed. Try another prompt.");
+      }
+
+      const st = data.status || "in_progress";
+      progText.textContent = `Fal.ai Wan status: ${st.toUpperCase()} (rendering 720p frames)...`;
+      progPct.textContent = st;
+      progBar.style.width = "65%";
+      wanPollTimer = setTimeout(() => pollWanStatus(requestId), 4000);
+    } catch (err) {
+      btn.disabled = false;
+      errBox.textContent = "⚠️ " + (err.message || "Unable to check video status.");
+      errBox.style.display = "block";
+    }
+  }
+
+  setTimeout(initWanSupabase, 200);
 
   function saveEngineSettings() {
     const model = document.getElementById("global-video-model").value;

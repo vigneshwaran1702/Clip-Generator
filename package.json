@@ -1,0 +1,30 @@
+{
+  "name": "video-tool",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "An ultra-fast AI video generation platform that creates short clips and full videos directly from user comments, prompts, or long video uploads.",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vigneshwaran1702/AI-Clip-Generator.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/vigneshwaran1702/AI-Clip-Generator/issues"
+  },
+  "homepage": "https://github.com/vigneshwaran1702/AI-Clip-Generator#readme",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.117.3",
+    "@vitejs/plugin-react": "^6.1.2",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "vite": "^8.3.4"
+  }
+}
