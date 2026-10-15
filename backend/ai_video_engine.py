@@ -606,40 +606,169 @@ def generate_procedural_scene_image(prompt: str, title: str, width: int, height:
     img.save(filepath, "JPEG", quality=90)
 
 
-def fetch_scene_image_fast(prompt: str, title: str, width: int, height: int, filepath: str, idx: int = 0, style: str = "liveaction"):
-    """Fetch online AI image with style prefix/suffix and strict 3.5s timeout; instant procedural fallback."""
+def _save_and_crop_image(img_data: bytes, width: int, height: int, filepath: str) -> bool:
+    """Center-crop and resize downloaded image to exact target resolution with high quality."""
+    try:
+        with Image.open(io.BytesIO(img_data)) as simg:
+            simg = simg.convert("RGB")
+            target_ratio = width / height
+            sw, sh = simg.size
+            if sw == 0 or sh == 0:
+                return False
+            s_ratio = sw / sh
+            if s_ratio > target_ratio:
+                nw = int(sh * target_ratio)
+                off = (sw - nw) // 2
+                crop = simg.crop((off, 0, off + nw, sh))
+            else:
+                nh = int(sw / target_ratio)
+                off = (sh - nh) // 2
+                crop = simg.crop((0, off, sw, off + nh))
+            final_img = crop.resize((width, height), Image.Resampling.LANCZOS)
+            final_img.save(filepath, "JPEG", quality=92)
+            return True
+    except Exception as exc:
+        log_safe(f"   [IMG-PROC] Crop/resize error: {exc}")
+        return False
+
+
+def fetch_scene_image_fast(
+    prompt: str,
+    title: str,
+    width: int,
+    height: int,
+    filepath: str,
+    idx: int = 0,
+    style: str = "liveaction",
+    api_key: str | None = None
+):
+    """
+    Multi-tier real image fetcher for YouTube Shorts & Instagram Reels:
+    1. Pollinations AI (with API key or public endpoint, 10s timeout)
+    2. Wikimedia Commons high-resolution photographic search based on scene keywords
+    3. Curated photographic stock visual (Picsum)
+    4. Enhanced procedural visual fallback
+    """
     clean_p = prompt.replace("'", "").replace('"', '').strip()
     style_cfg = STYLE_CONFIGS.get(style, STYLE_CONFIGS.get("liveaction", {}))
 
+    # ── Tier 1: Pollinations (API Key or Public) ──────────────────────────────
     prefix = style_cfg.get("prompt_prefix", "photorealistic live action film still,")
     suffix = style_cfg.get("prompt_suffix", ", 8k resolution, award winning cinematography")
-    orientation = "vertical 9:16 portrait orientation" if height > width else "horizontal 16:9 widescreen composition"
-
+    orientation = "vertical 9:16 portrait" if height > width else "horizontal 16:9 widescreen"
     full_prompt = f"{prefix} {clean_p} {suffix}, {orientation}"
     encoded = urllib.parse.quote(full_prompt[:260])
-    url = f"https://image.pollinations.ai/prompt/{encoded}?width={width}&height={height}&nologo=true&seed={random.randint(100, 99999)}"
 
+    if api_key and api_key.strip():
+        # Authenticated Gen AI endpoint
+        url_auth = f"https://gen.pollinations.ai/image/{encoded}?model=flux&width={width}&height={height}&nologo=true&seed={random.randint(100, 99999)}"
+        try:
+            req = urllib.request.Request(
+                url_auth,
+                headers={
+                    "User-Agent": "Mozilla/5.0",
+                    "Authorization": f"Bearer {api_key.strip()}"
+                }
+            )
+            with urllib.request.urlopen(req, timeout=12) as resp:
+                if resp.status == 200:
+                    data = resp.read()
+                    if _save_and_crop_image(data, width, height, filepath):
+                        log_safe(f"   [AI-IMG] Online GenAI image generated for {title} [{style}]")
+                        return
+        except Exception as e:
+            log_safe(f"   [AI-IMG] Authenticated GenAI error: {e}")
+
+    # Public Pollinations endpoint
+    url_pub = f"https://image.pollinations.ai/prompt/{encoded}?width={width}&height={height}&nologo=true&seed={random.randint(100, 99999)}"
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"})
-        with urllib.request.urlopen(req, timeout=3.5) as resp:
+        req = urllib.request.Request(url_pub, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"})
+        with urllib.request.urlopen(req, timeout=8) as resp:
             if resp.status == 200:
-                with open(filepath, "wb") as f:
-                    f.write(resp.read())
-                log_safe(f"   [AI-IMG] Online image downloaded for {title} [{style}]")
+                data = resp.read()
+                if _save_and_crop_image(data, width, height, filepath):
+                    log_safe(f"   [AI-IMG] Online image downloaded for {title} [{style}]")
+                    return
+    except Exception:
+        pass
+
+    # ── Tier 2: Wikimedia Commons Photographic Search ───────────────────────────
+    try:
+        # Extract meaningful subject words
+        words = [
+            w for w in re.findall(r'\b[a-zA-Z]{3,}\b', (title + ' ' + clean_p).lower())
+            if w not in {
+                'photorealistic', 'live', 'action', 'film', 'still', 'cinematic',
+                'resolution', 'award', 'winning', 'cinematography', 'vertical',
+                'portrait', 'orientation', 'the', 'and', 'with', 'for', '8k', 'uhd',
+                'shot', 'real', 'movie', 'scene', 'visual', 'high', 'detail'
+            }
+        ]
+        query = ' '.join(words[:3]) or title
+        wiki_api = (
+            f"https://commons.wikimedia.org/w/api.php?action=query&generator=search"
+            f"&gsrsearch={urllib.parse.quote(query)}&gsrnamespace=6&prop=imageinfo&iiprop=url|mime"
+            f"&format=json&gsrlimit=5"
+        )
+        wiki_headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+            "Referer": "https://commons.wikimedia.org/"
+        }
+        req_wiki = urllib.request.Request(wiki_api, headers=wiki_headers)
+        with urllib.request.urlopen(req_wiki, timeout=7) as resp_w:
+            res_json = json.loads(resp_w.read().decode("utf-8", errors="ignore"))
+            pages = res_json.get("query", {}).get("pages", {})
+            for pid, p in pages.items():
+                if "imageinfo" in p and p["imageinfo"]:
+                    raw_u = p["imageinfo"][0].get("url", "")
+                    clean_u = raw_u.split("?")[0]
+                    if clean_u.lower().endswith((".jpg", ".jpeg", ".png", ".webp")):
+                        # Fetch the actual image
+                        img_req = urllib.request.Request(clean_u, headers=wiki_headers)
+                        with urllib.request.urlopen(img_req, timeout=9) as img_resp:
+                            data = img_resp.read()
+                            if _save_and_crop_image(data, width, height, filepath):
+                                log_safe(f"   [WIKI-IMG] HD photo downloaded for '{query}' [{title}]")
+                                return
+    except Exception as e:
+        log_safe(f"   [WIKI-IMG] Query '{title}' skipped: {e}")
+
+    # ── Tier 3: Curated Photographic Stock Visual (Picsum) ─────────────────────
+    try:
+        seed = abs(hash(clean_p + str(idx))) % 1000
+        picsum_url = f"https://picsum.photos/{width}/{height}?random={seed}"
+        req_p = urllib.request.Request(picsum_url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"})
+        with urllib.request.urlopen(req_p, timeout=7) as resp_p:
+            data = resp_p.read()
+            if _save_and_crop_image(data, width, height, filepath):
+                log_safe(f"   [STOCK-IMG] Real stock photo applied for {title} [{style}]")
                 return
     except Exception:
         pass
 
-    # Instant fallback using matching style palette & badge
+    # ── Tier 4: Enhanced Cinematic Procedural Visual ───────────────────────────
+    log_safe(f"   [FALLBACK] Rendering procedural graphic for {title}")
     generate_procedural_scene_image(prompt, title, width, height, filepath, idx, style=style)
 
 
 def build_ass_subtitles(scenes: list[dict], width: int, height: int, style: str = "viral_yellow") -> str:
-    """Generate bold viral subtitles in ASS format."""
-    font_size = 46 if width >= 1080 else 34
-    margin_v = int(height * 0.22)
+    """Generate viral YouTube Shorts & Instagram Reels style subtitles in ASS format."""
+    # Big, bold and readable for phone screens
+    font_size = int(width * 0.052)
+    font_size = max(34, min(font_size, 58))
 
-    primary_color = "&H0000FFFF" if style == "viral_yellow" else ("&H00FFFF00" if style == "neon_cyan" else "&H00FFFFFF")
+    # Lower-third centered (above TikTok/Shorts UI buttons)
+    margin_v = int(height * 0.28)
+
+    # Viral color presets
+    if style == "viral_yellow":
+        primary_color = "&H002BF7FF"  # High-energy vibrant yellow
+    elif style == "neon_cyan":
+        primary_color = "&H00FFFF00"  # Electric neon cyan
+    elif style == "neon_green":
+        primary_color = "&H0033FF00"  # Viral highlighter green
+    else:
+        primary_color = "&H00FFFFFF"  # Pure crisp white
 
     header = f"""[Script Info]
 ScriptType: v4.00+
@@ -648,7 +777,7 @@ PlayResY: {height}
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Viral,Arial,{font_size},{primary_color},&H000000FF,&H00000000,&H80000000,-1,0,0,0,100,100,1,0,1,3.5,2.0,2,40,40,{margin_v},1
+Style: Viral,Arial Black,{font_size},{primary_color},&H000000FF,&H00000000,&H80000000,-1,0,0,0,100,100,1,0,1,4.0,2.5,2,40,40,{margin_v},1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -669,7 +798,8 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         start = scene.get("start_time", 0.0)
         dur = scene.get("duration", 4.0)
 
-        chunk_size = 4
+        # 3 words per flash gives that punchy Alex Hormozi / TikTok cadence
+        chunk_size = 3
         chunks = [words[i:i + chunk_size] for i in range(0, len(words), chunk_size)]
         cdur = dur / len(chunks)
 
@@ -682,11 +812,12 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
     return header + "\n".join(dialogues) + "\n"
 
 
+
 def build_camera_motion_filter(motion_type: str, duration: float, fps: int, width: int, height: int) -> str:
     """Generate high-definition FFmpeg filter string for fluid camera dynamics (pans, zooms, tilts)."""
     total_frames = max(25, int(duration * fps))
-    pre_w = width * 2
-    pre_h = height * 2
+    pre_w = int(width * 1.2)
+    pre_h = int(height * 1.2)
     base = f"scale={pre_w}:{pre_h}:force_original_aspect_ratio=increase,crop={pre_w}:{pre_h}"
 
     motion_type = (motion_type or "zoom_in").lower()
@@ -842,7 +973,8 @@ def create_ai_short_video(
                     height,
                     img_paths[i],
                     i,
-                    resolved_style
+                    resolved_style,
+                    api_key
                 )
                 for i in range(len(scenes))
             ]
@@ -918,7 +1050,7 @@ def create_ai_short_video(
             final_output_path
         ])
 
-        proc = subprocess.run(cmd, cwd=temp_dir, capture_output=True, text=True, errors="replace", timeout=75)
+        proc = subprocess.run(cmd, cwd=temp_dir, capture_output=True, text=True, errors="replace", timeout=180)
         if proc.returncode != 0:
             log_safe(f"[WARN] Primary single-pass error, running robust fallback: {proc.stderr[:160]}")
             cmd_safe = [
