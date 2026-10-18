@@ -38,9 +38,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-UPLOAD_FOLDER = "uploads"
-OUTPUT_FOLDER = "outputs"
-FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
+ROOT_DIR = Path(__file__).resolve().parent.parent
+UPLOAD_FOLDER = str(ROOT_DIR / "uploads")
+OUTPUT_FOLDER = str(ROOT_DIR / "outputs")
+FRONTEND_DIR = ROOT_DIR / "frontend"
 INDEX_HTML_PATH = FRONTEND_DIR / "index.html"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
@@ -387,7 +388,11 @@ def download_short(filename: str):
     safe_name = safe_filename(filename)
     filepath = os.path.join(OUTPUT_FOLDER, safe_name)
     if not os.path.exists(filepath):
-        raise HTTPException(status_code=404, detail=f"File not found: {safe_name}")
+        alt_path = os.path.join(str(Path(__file__).resolve().parent / "outputs"), safe_name)
+        if os.path.exists(alt_path):
+            filepath = alt_path
+        else:
+            raise HTTPException(status_code=404, detail=f"File not found: {safe_name}")
     return FileResponse(
         path=filepath,
         filename=safe_name,
